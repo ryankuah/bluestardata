@@ -1,37 +1,89 @@
-import Link from "next/link";
-
+"use client";
+import { useEffect, useState, Fragment } from "react";
+import {
+  fetchCategories,
+  fetchSeries,
+  type Series,
+  type Category,
+} from "@/utils";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbList,
+  BreadcrumbSeparator,
+} from "@/components/ui/breadcrumb";
+type BreadcrumbTuple = [string, number];
 export default function HomePage() {
+  const [breadcrumb, setBreadCrumb] = useState<BreadcrumbTuple[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [series, setSeries] = useState<Series[]>([]);
+  const getCategories = async (id = 0) => {
+    const data = await fetchCategories(id);
+    setCategories(data);
+  };
+  const getSeries = async (id = 0) => {
+    const data = await fetchSeries(id);
+    setSeries(data);
+  };
+
+  const handleClick = async (name: string, id = 0) => {
+    setBreadCrumb([...breadcrumb, [name, id]]);
+    getCategories(id).catch((err) => console.error(err));
+    getSeries(id).catch((err) => console.error(err));
+  };
+
+  const handleBreadcrumb = (id: number, index: number) => {
+    setBreadCrumb(breadcrumb.slice(0, index + 1));
+    getCategories(id).catch((err) => console.error(err));
+    getSeries(id).catch((err) => console.error(err));
+  };
+
+  useEffect(() => {
+    setBreadCrumb([["Home", 0] as BreadcrumbTuple]);
+    getCategories().catch((err) => console.error(err));
+    getSeries().catch((err) => console.error(err));
+  }, []);
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-[#2e026d] to-[#15162c] text-white">
-      <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16">
-        <h1 className="text-5xl font-extrabold tracking-tight text-white sm:text-[5rem]">
-          Create <span className="text-[hsl(280,100%,70%)]">T3</span> App
-        </h1>
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-8">
-          <Link
-            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
-            href="https://create.t3.gg/en/usage/first-steps"
-            target="_blank"
-          >
-            <h3 className="text-2xl font-bold">First Steps →</h3>
-            <div className="text-lg">
-              Just the basics - Everything you need to know to set up your
-              database and authentication.
+    <div className="flex flex-col">
+      <Breadcrumb>
+        <BreadcrumbList>
+          {breadcrumb.map(([name, id], index) => (
+            <Fragment key={id}>
+              <BreadcrumbItem>
+                <button onClick={() => handleBreadcrumb(id, index)}>
+                  {name}
+                </button>
+              </BreadcrumbItem>
+              {index !== breadcrumb.length - 1 && (
+                <BreadcrumbSeparator aria-hidden="true" />
+              )}
+            </Fragment>
+          ))}
+        </BreadcrumbList>
+      </Breadcrumb>
+      <div className="flex flex-row">
+        <div className="flex h-full w-1/2 flex-col">
+          {categories.map((category) => (
+            <button
+              onClick={() => handleClick(category.name, category.id)}
+              key={category.id}
+            >
+              {category.name}
+            </button>
+          ))}
+        </div>
+        <div className="h-full w-1/2">
+          {series.map((series) => (
+            <div
+              key={series.id}
+              className="m-2 rounded-sm border-2 border-black bg-red-200"
+            >
+              <div>{series.title}</div>
             </div>
-          </Link>
-          <Link
-            className="flex max-w-xs flex-col gap-4 rounded-xl bg-white/10 p-4 text-white hover:bg-white/20"
-            href="https://create.t3.gg/en/introduction"
-            target="_blank"
-          >
-            <h3 className="text-2xl font-bold">Documentation →</h3>
-            <div className="text-lg">
-              Learn more about Create T3 App, the libraries it uses, and how to
-              deploy it.
-            </div>
-          </Link>
+          ))}
         </div>
       </div>
-    </main>
+    </div>
   );
 }
