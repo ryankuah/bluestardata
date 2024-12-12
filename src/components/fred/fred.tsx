@@ -1,10 +1,5 @@
 import { db } from "@/server/db";
-import {
-  fetchObservations,
-  fetchSeries,
-  type FredData,
-  type Series,
-} from "@/utils";
+import { fetchObservations, fetchSeries, type FredData } from "@/utils";
 import { FREDData } from "./fredData";
 
 export default async function FRED({
