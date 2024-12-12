@@ -79,7 +79,7 @@ export default function HomePage() {
               key={series.id}
               className="m-2 rounded-sm border-2 border-black bg-red-200"
             >
-              <div>{series.title}</div>
+              <div>{series.id + series.title}</div>
             </div>
           ))}
         </div>
