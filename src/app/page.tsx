@@ -4,10 +4,10 @@ import { env } from "@/env";
 import { StateMap } from "./map";
 import { type FeatureCollection as GeoJSON } from "geojson";
 import { promises as fs } from "fs";
+import file from "./states.json";
 
 export default async function USAPage() {
-  const file = await fs.readFile(process.cwd() + "/public/states.json", "utf8");
-  const data = JSON.parse(file) as GeoJSON;
+  const data = file as GeoJSON;
 
   return (
     <div>

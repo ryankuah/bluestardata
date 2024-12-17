@@ -6,7 +6,8 @@ import { type FeatureCollection, type GeoJSON, type Geometry } from "geojson";
 import { bbox } from "@turf/bbox";
 import { Map } from "./map";
 import { env } from "@/env";
-import path from "path";
+import datas from "../../states.json";
+import countyJson from "./counties.json";
 
 export default async function statePage({
   params,
@@ -26,11 +27,8 @@ export default async function statePage({
   const counties = stateDB.counties;
   const msas = stateDB.msas;
 
-  const file = await fs.readFile(
-    path.join(process.cwd(), "/public/states.json"),
-    "utf8",
-  );
-  const data = JSON.parse(file) as FeatureCollection;
+  const data = datas as FeatureCollection;
+
   const stateData = data.features.find(
     (feature) => feature.properties!.name === state,
   );
@@ -42,11 +40,7 @@ export default async function statePage({
 
   const [minLng, minLat, maxLng, maxLat] = bbox(feature);
 
-  const countyFile = await fs.readFile(
-    process.cwd() + "/public/counties.geojson",
-    "utf8",
-  );
-  const countyData = JSON.parse(countyFile) as FeatureCollection;
+  const countyData = countyJson as FeatureCollection;
 
   return (
     <div className="flex flex-row">
