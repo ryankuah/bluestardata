@@ -6,7 +6,7 @@ import { type FeatureCollection, type GeoJSON, type Geometry } from "geojson";
 import { bbox } from "@turf/bbox";
 import { Map } from "./map";
 import { env } from "@/env";
-import { booleanWithin } from "@turf/boolean-within";
+import path from "path";
 
 export default async function statePage({
   params,
@@ -26,7 +26,10 @@ export default async function statePage({
   const counties = stateDB.counties;
   const msas = stateDB.msas;
 
-  const file = await fs.readFile("/public/states.json", "utf8");
+  const file = await fs.readFile(
+    path.join(process.cwd(), "/public/states.json"),
+    "utf8",
+  );
   const data = JSON.parse(file) as FeatureCollection;
   const stateData = data.features.find(
     (feature) => feature.properties!.name === state,
