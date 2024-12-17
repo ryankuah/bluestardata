@@ -32,7 +32,6 @@ export function FREDData({
   return (
     <div className="mr-2 flex flex-col">
       <div className="flex flex-row">
-        <p> FRED Data: </p>
         <div className="mx-auto"></div>
         <button
           className="rounded-sm bg-red-100 outline outline-black"

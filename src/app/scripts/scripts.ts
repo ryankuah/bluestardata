@@ -13,8 +13,6 @@ export async function addUSA() {
 
 export async function fredStates() {
   const allStates = await fetchCategories(27281);
-  const countyArr: [number, number][] = [];
-  const msaArr: [number, number][] = [];
   for (const state of allStates) {
     const returnedId = await db
       .insert(states)

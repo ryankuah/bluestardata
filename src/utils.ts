@@ -162,3 +162,21 @@ export async function addObservation(code: [string, string], place: string) {
     msaId: msaId?.id ?? null,
   });
 }
+
+export type GeoJSON = {
+  type: "FeatureCollection";
+  features: Feature[];
+};
+
+export type Feature = {
+  type: "Feature";
+  id: string;
+  properties: {
+    name: string;
+    percentile: number;
+  };
+  geometry: {
+    type: "Polygon" | "MultiPolygon";
+    coordinates: number[][][];
+  };
+};

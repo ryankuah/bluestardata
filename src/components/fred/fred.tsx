@@ -1,6 +1,7 @@
 import { db } from "@/server/db";
 import { fetchObservations, fetchSeries, type FredData } from "@/utils";
 import { FREDData } from "./fredData";
+import Image from "next/image";
 
 export default async function FRED({
   state,
@@ -68,9 +69,7 @@ export default async function FRED({
 
   return (
     <div className="flex h-full w-full flex-col">
-      <p>
-        FRED Data for {state}, {county}
-      </p>
+      <Image src="/fred.png" alt="FRED" width={32} height={32} />
       <div className="flex h-full w-full flex-row">
         <div className="flex w-1/2 flex-col">
           <p>State Data</p>

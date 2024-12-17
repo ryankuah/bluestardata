@@ -18,6 +18,7 @@ export const env = createEnv({
     NODE_ENV: z
       .enum(["development", "test", "production"])
       .default("development"),
+    MAPBOX_TOKEN: z.string(),
   },
 
   /**
@@ -35,6 +36,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     AUTH_SECRET: process.env.AUTH_SECRET,
+    MAPBOX_TOKEN: process.env.MAPBOX_TOKEN,
     // AUTH_DISCORD_ID: process.env.AUTH_DISCORD_ID,
     // AUTH_DISCORD_SECRET: process.env.AUTH_DISCORD_SECRET,
     FRED_API_KEY: process.env.FRED_API_KEY,
