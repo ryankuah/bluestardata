@@ -13,7 +13,6 @@ export default async function page({
   return (
     <div>
       <Link href={`/states/${state}/county/${county}/fred`}>
-        {" "}
         <Image src="/fred.png" alt="FRED" width={32} height={32} />
       </Link>
     </div>

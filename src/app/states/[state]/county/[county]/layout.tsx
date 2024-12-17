@@ -1,5 +1,3 @@
-import DataSource from "./fred/page";
-
 export default async function Page({
   params,
   children,

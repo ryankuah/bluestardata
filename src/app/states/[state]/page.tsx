@@ -26,7 +26,7 @@ export default async function statePage({
   const counties = stateDB.counties;
   const msas = stateDB.msas;
 
-  const file = await fs.readFile(process.cwd() + "/public/states.json", "utf8");
+  const file = await fs.readFile("/public/states.json", "utf8");
   const data = JSON.parse(file) as FeatureCollection;
   const stateData = data.features.find(
     (feature) => feature.properties!.name === state,
