@@ -7,6 +7,7 @@ import { type Feature } from "geojson";
 import FRED from "@/components/fred/fred";
 import Unemployment from "./unemployment";
 import Labour from "./employment";
+import { Suspense } from "react";
 
 export default async function page({
   params,
@@ -29,7 +30,7 @@ export default async function page({
   const countyBorder = countyObj!.countyBorder as Feature;
 
   return (
-    <div className="m-4 flex h-[100vh] w-[100vw] flex-col">
+    <div className="flex h-screen w-screen flex-col p-4">
       <h1 className="text-2xl font-bold">
         {county}, {state}
       </h1>
@@ -45,15 +46,17 @@ export default async function page({
       </div>
       <div className="z-50 flex h-full w-[100vw] flex-col bg-white p-2">
         <div className="z-50 mx-auto flex h-[60vh] w-[80vw] flex-col items-center justify-center bg-white p-2">
-          <Unemployment
-            state={state}
-            county={county}
-            stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
-            countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
-          />
+          <Suspense fallback={<p>Loading...</p>}>
+            <Unemployment
+              state={state}
+              county={county}
+              stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+              countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+            />
+          </Suspense>
         </div>
       </div>
-      <div className="z-50 flex h-full w-[100vw] flex-col items-center bg-white p-2">
+      <div className="mx-auto flex h-full w-full flex-col bg-white p-2">
         <Labour
           state={state}
           county={county}

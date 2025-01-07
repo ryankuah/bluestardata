@@ -2,7 +2,6 @@
 import React from "react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
-import "mapbox-gl/dist/mapbox-gl.css";
 
 export function LabourDoughnut({
   doughnutData,
@@ -46,7 +45,7 @@ export function LabourDoughnut({
     ],
   };
   return (
-    <div className="flex flex-row">
+    <div className="flex h-[80vh] w-[40vw] flex-row">
       <Doughnut data={empData} options={{ responsive: true }} />
       <Doughnut data={estabData} options={{ responsive: true }} />
     </div>
