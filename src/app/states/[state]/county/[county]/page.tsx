@@ -46,14 +46,12 @@ export default async function page({
       </div>
       <div className="z-50 flex h-full w-[100vw] flex-col bg-white p-2">
         <div className="z-50 mx-auto flex h-[60vh] w-[80vw] flex-col items-center justify-center bg-white p-2">
-          <Suspense fallback={<p>Loading...</p>}>
-            <Unemployment
-              state={state}
-              county={county}
-              stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
-              countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
-            />
-          </Suspense>
+          <Unemployment
+            state={state}
+            county={county}
+            stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+            countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+          />
         </div>
       </div>
       <div className="mx-auto flex h-full w-full flex-col bg-white p-2">
