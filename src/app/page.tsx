@@ -1,14 +1,10 @@
-import { db } from "@/server/db";
-import Link from "next/link";
 import { env } from "@/env";
 import { StateMap } from "./map";
-import { type FeatureCollection as GeoJSON } from "geojson";
-import { promises as fs } from "fs";
-import file from "./states.json";
+import { getStateGeoJSON } from "@/utils";
 
 export default async function USAPage() {
-  const data = file as GeoJSON;
-
+  const data = await getStateGeoJSON();
+  console.log(data);
   return (
     <div>
       <StateMap token={env.MAPBOX_TOKEN} data={data} />

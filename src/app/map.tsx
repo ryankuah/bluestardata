@@ -2,7 +2,7 @@
 import { Map, Source, Layer, type MapMouseEvent } from "react-map-gl";
 import { useRouter } from "next/navigation";
 import { dataLayer } from "./dataLayer";
-import { type FeatureCollection as GeoJSON, type Feature } from "geojson";
+import { type GeoJSON, type Feature } from "@/utils";
 import { useState, useEffect, useCallback } from "react";
 
 export function StateMap({ token, data }: { token: string; data: GeoJSON }) {
@@ -26,7 +26,6 @@ export function StateMap({ token, data }: { token: string; data: GeoJSON }) {
       features: coloredData,
     } as GeoJSON;
     setStates(coloredCollection);
-    console.log(coloredData);
   }, [data]);
   const onHover = useCallback((event: MapMouseEvent) => {
     const {
@@ -63,7 +62,7 @@ export function StateMap({ token, data }: { token: string; data: GeoJSON }) {
           className="absolute m-2 h-max w-max bg-gray-500 p-1"
           style={{ left: hoverInfo.x, top: hoverInfo.y }}
         >
-          <div>{hoverInfo.feature.properties!.name}</div>
+          <div>{hoverInfo.feature.properties.name}</div>
         </div>
       )}
     </Map>

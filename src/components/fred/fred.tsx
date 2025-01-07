@@ -48,8 +48,8 @@ export default async function FRED({
     series.name,
   ]);
 
-  const allStateSeries = await fetchSeries(stateObj.fredId);
-  const allCountySeries = await fetchSeries(countyObj.fredId);
+  const allStateSeries = await fetchSeries(stateObj.fredId!);
+  const allCountySeries = await fetchSeries(countyObj.fredId!);
 
   const allStateCodes: [string, string][] = allStateSeries.map((series) => [
     series.id,

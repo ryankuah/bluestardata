@@ -8,6 +8,7 @@ import {
   timestamp,
   varchar,
   serial,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
@@ -30,7 +31,9 @@ export const states = createTable("state", {
   countryId: integer("country_id")
     .notNull()
     .references(() => countries.id),
-  fredId: integer("fred_id").notNull().unique(),
+  fredId: integer("fred_id").unique(),
+  stateBorder: jsonb("state_border"),
+  fipsCode: integer("fipsCode"),
 });
 
 export const counties = createTable("county", {
@@ -39,7 +42,13 @@ export const counties = createTable("county", {
   stateId: integer("state_id")
     .notNull()
     .references(() => states.id),
-  fredId: integer("fred_id").notNull().unique(),
+  fredId: integer("fred_id").unique(),
+  countyBorder: jsonb("county_border"),
+  fipsCode: integer("fips_code"),
+  gnisId: integer("gnis_id"),
+  lsad: integer("lsad"),
+  aland: varchar("aland", { length: 255 }),
+  awater: varchar("awater", { length: 255 }),
 });
 
 export const msas = createTable("msa", {

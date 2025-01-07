@@ -1,5 +1,12 @@
-import Link from "next/link";
-import Image from "next/image";
+import { db } from "@/server/db";
+import { counties, states } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
+import { env } from "@/env";
+import CountyMap from "./map";
+import { type Feature } from "geojson";
+import FRED from "@/components/fred/fred";
+import Unemployment from "./unemployment";
+import Labour from "./employment";
 
 export default async function page({
   params,
@@ -10,11 +17,51 @@ export default async function page({
   const countySlug = (await params).county;
   const state = decodeURIComponent(stateSlug);
   const county = decodeURIComponent(countySlug);
+  const stateCounties = await db.query.states.findFirst({
+    where: eq(states.name, state),
+    with: {
+      counties: true,
+    },
+  });
+  const countyObj = stateCounties!.counties.find(
+    (place) => place.name === county,
+  );
+  const countyBorder = countyObj!.countyBorder as Feature;
+
   return (
-    <div>
-      <Link href={`/states/${state}/county/${county}/fred`}>
-        <Image src="/fred.png" alt="FRED" width={32} height={32} />
-      </Link>
+    <div className="m-4 flex h-[100vh] w-[100vw] flex-col">
+      <h1 className="text-2xl font-bold">
+        {county}, {state}
+      </h1>
+      <div className="flex h-max w-[100vw] flex-row gap-2">
+        <CountyMap feature={countyBorder} token={env.MAPBOX_TOKEN} />
+        <div className="flex h-full w-full flex-col">
+          <p>Population:</p>
+          <p>Median Age:</p>
+          <p>Median Income:</p>
+          <p>Poverty Rate:</p>
+          <p>Unemployment Rate:</p>
+        </div>
+      </div>
+      <div className="z-50 flex h-full w-[100vw] flex-col bg-white p-2">
+        <div className="z-50 mx-auto flex h-[60vh] w-[80vw] flex-col items-center justify-center bg-white p-2">
+          <Unemployment
+            state={state}
+            county={county}
+            stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+            countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+          />
+        </div>
+      </div>
+      <div className="z-50 flex h-full w-[100vw] flex-col items-center bg-white p-2">
+        <Labour
+          state={state}
+          county={county}
+          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+        />
+      </div>
     </div>
   );
 }
+// <FRED state={state} county={county} />

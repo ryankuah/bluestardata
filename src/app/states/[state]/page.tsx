@@ -1,13 +1,16 @@
 import { db } from "@/server/db";
 import { eq } from "drizzle-orm";
 import { states } from "@/server/db/schema";
-import { promises as fs } from "fs";
-import { type FeatureCollection, type GeoJSON, type Geometry } from "geojson";
 import { bbox } from "@turf/bbox";
 import { Map } from "./map";
 import { env } from "@/env";
-import datas from "../../states.json";
-import countyJson from "./counties.json";
+import {
+  type Feature,
+  type County,
+  type GeoJSON,
+  type Geometry,
+} from "@/utils";
+import { type FeatureCollection } from "geojson";
 
 export default async function statePage({
   params,
@@ -24,23 +27,32 @@ export default async function statePage({
     },
   });
   if (!stateDB) return <div>{state} not found</div>;
-  const counties = stateDB.counties;
-  const msas = stateDB.msas;
+  const stateCounties = stateDB.counties as County[];
+  const stateMsas = stateDB.msas;
 
-  const data = datas as FeatureCollection;
-
-  const stateData = data.features.find(
-    (feature) => feature.properties!.name === state,
-  );
+  const stateData = stateDB.stateBorder as Feature;
   if (!stateData) return <div>{state} not found</div>;
   const feature = {
     type: "FeatureCollection",
     features: [stateData],
-  } as GeoJSON;
+  } as FeatureCollection;
 
   const [minLng, minLat, maxLng, maxLat] = bbox(feature);
 
-  const countyData = countyJson as FeatureCollection;
+  const filteredCounties = stateCounties.filter(
+    (item) => item.countyBorder !== null,
+  );
+
+  const countyData = {
+    type: "FeatureCollection",
+    features: filteredCounties.map((county) => ({
+      type: "Feature",
+      properties: {
+        name: county.countyBorder.properties.NAME,
+      },
+      geometry: county.countyBorder.geometry as Geometry,
+    })),
+  } as unknown as GeoJSON;
 
   return (
     <div className="flex flex-row">
@@ -51,8 +63,8 @@ export default async function statePage({
         maxLng={maxLng}
         maxLat={maxLat}
         countyData={countyData}
-        counties={counties}
-        msas={msas}
+        counties={stateCounties}
+        msas={stateMsas}
         state={state}
       />
     </div>

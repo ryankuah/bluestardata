@@ -175,8 +175,64 @@ export type Feature = {
     name: string;
     percentile: number;
   };
-  geometry: {
-    type: "Polygon" | "MultiPolygon";
-    coordinates: number[][][];
+  geometry: Geometry;
+};
+
+export type Geometry = {
+  type: "Polygon" | "MultiPolygon";
+  coordinates: number[][][];
+};
+
+type DBFeature = {
+  stateBorder: {
+    id: string;
+    type: string;
+    geometry: { type: string; coordinates: [[number, number][]] };
+    properties: { name: string };
   };
+};
+export async function getStateGeoJSON() {
+  const features = (await db.query.states.findMany({
+    columns: {
+      stateBorder: true,
+    },
+  })) as unknown as DBFeature[];
+  const filteredFeatures = features.filter((item) => item.stateBorder !== null);
+
+  const geoJSON: GeoJSON = {
+    type: "FeatureCollection",
+    features: filteredFeatures.map((feature) => ({
+      type: feature.stateBorder.type,
+      id: feature.stateBorder.id,
+      properties: feature.stateBorder.properties,
+      geometry: feature.stateBorder.geometry,
+    })) as unknown as Feature[],
+  };
+  return geoJSON;
+}
+
+export type County = {
+  id: number;
+  fredId: number;
+  stateId: number;
+  name: string;
+  countyBorder: {
+    id: string;
+    type: string;
+    geometry: { type: string; coordinates: [[number, number][]] };
+    properties: {
+      NAME: string;
+      STATEFP: string;
+      COUNTYFP: string;
+      COUNTYNS: string;
+      LSAD: string;
+      ALAND: string;
+      AWATER: string;
+    };
+  };
+  fipsCode: number;
+  gnisId: number;
+  lsad: number;
+  aland: string;
+  awater: string;
 };
