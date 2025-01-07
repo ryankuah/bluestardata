@@ -5,9 +5,7 @@
 import "./src/env.js";
 
 /** @type {import("next").NextConfig} */
-const config = {};
-
-module.exports = {
+const config = {
   async headers() {
     return [
       {
