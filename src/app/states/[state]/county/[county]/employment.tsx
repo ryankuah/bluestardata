@@ -24,5 +24,9 @@ export default async function Labour({
     });
   }
   data.sort((a, b) => b.emp - a.emp);
-  return <LabourDoughnut doughnutData={data.slice(0, 25)} />;
+  return (
+    <div className="flex flex-col items-center">
+      <LabourDoughnut doughnutData={data.slice(0, 25)} />
+    </div>
+  );
 }

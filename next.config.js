@@ -7,4 +7,20 @@ import "./src/env.js";
 /** @type {import("next").NextConfig} */
 const config = {};
 
+module.exports = {
+  async headers() {
+    return [
+      {
+        source: "/:path*{/}?",
+        headers: [
+          {
+            key: "X-Accel-Buffering",
+            value: "no",
+          },
+        ],
+      },
+    ];
+  },
+};
+
 export default config;
