@@ -2,6 +2,7 @@
 import React from "react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 export function LabourDoughnut({
   doughnutData,
