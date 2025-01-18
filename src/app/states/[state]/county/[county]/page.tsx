@@ -7,6 +7,7 @@ import { type Feature } from "geojson";
 import Unemployment from "./unemployment";
 import Labour from "./employment";
 import CensusCBP from "@/components/census/cbp";
+import BLSQCEW from "@/components/bls/qcew";
 
 export default async function Page({
   params,
@@ -77,6 +78,15 @@ export default async function Page({
 
       <section className="w-full max-w-6xl bg-white shadow-md rounded-lg p-4">
         <CensusCBP
+          state={state}
+          county={county}
+          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+        />
+      </section>
+
+      <section className="w-full max-w-6xl bg-white shadow-md rounded-lg p-4">
+        <BLSQCEW
           state={state}
           county={county}
           stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
