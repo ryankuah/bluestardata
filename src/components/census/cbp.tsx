@@ -1,5 +1,4 @@
-'use client';
-
+"use client";
 import React, { useState, useEffect } from "react";
 
 export default function CensusCBP({
@@ -13,49 +12,99 @@ export default function CensusCBP({
   stateFips: string;
   countyFips: string;
 }) {
-  const [data, setData] = useState<any | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  const CENSUS_API_KEY = process.env.NEXT_PUBLIC_CENSUS_API_KEY;
+
+  const fetchData = async () => {
+    setLoading(true);
+    setError(false);
+    try {
+      const url = `https://api.census.gov/data/2022/cbp?get=NAICS2017,NAICS2017_LABEL,ESTAB,EMP,PAYANN&for=county:${countyFips}&in=state:${stateFips}&key=${CENSUS_API_KEY}`;
+      const response = await fetch(url);
+      const json = await response.json();
+
+      if (response.ok) {
+        const filteredData = json
+          .slice(1)
+          .filter(
+            (row: any) =>
+              row[2] !== null &&
+              row[2] !== "0" &&
+              row[3] !== null &&
+              row[3] !== "0" &&
+              row[4] !== null &&
+              row[4] !== "0"
+          )
+          .filter(
+            (row: any, index: number, self: any) =>
+              self.findIndex((r: any) => r[1] === row[1]) === index
+          );
+
+        setData(filteredData);
+      } else {
+        throw new Error("Failed to fetch data");
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setData([]);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-
-      try {
-        const response = await fetch(
-          `https://api.census.gov/data/cbp?get=NAME&for=county:${countyFips}&in=state:${stateFips}`
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        setData(result);
-      } catch (err: any) {
-        setError(err.message || "An unknown error occurred");
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
-  }, [stateFips, countyFips]);
+  }, []);
 
   return (
     <div>
-      <h1>Census CBP Data</h1>
-      <p>
-        <strong>State:</strong> {state}
-      </p>
-      <p>
-        <strong>County:</strong> {county}
-      </p>
-      <p>
-        <strong>Data:</strong>
-      </p>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+      <h1 className="text-xl font-bold text-gray-800 mb-4 sticky top-0 bg-white z-10 w-full">
+        2022 CBP for {county}, {state}
+      </h1>
+      <div
+        className="overflow-y-auto w-full"
+        style={{ maxHeight: "400px" }}
+      >
+        {loading ? (
+          <div className="text-center py-4 text-blue-600">Loading...</div>
+        ) : error ? (
+          <div className="text-center py-4 text-red-500">Failed to load data</div>
+        ) : data.length === 0 ? (
+          <div className="text-center py-4 text-gray-500">No Data Found</div>
+        ) : (
+          <table className="table-auto w-full bg-white shadow-md rounded-lg">
+            <thead className="bg-blue-600 text-white sticky top-0 z-10">
+              <tr>
+                <th className="px-4 py-2">Industry Code</th>
+                <th className="px-4 py-2">Industry Name</th>
+                <th className="px-4 py-2">Establishments</th>
+                <th className="px-4 py-2">Employees</th>
+                <th className="px-4 py-2">Annual Payroll</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row, index) => (
+                <tr
+                  key={index}
+                  className={`${
+                    index % 2 === 0 ? "bg-gray-100" : "bg-white"
+                  }`}
+                >
+                  <td className="px-4 py-2">{row[0]}</td>
+                  <td className="px-4 py-2">{row[1]}</td>
+                  <td className="px-4 py-2">{row[2]}</td>
+                  <td className="px-4 py-2">{row[3]}</td>
+                  <td className="px-4 py-2">{row[4]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

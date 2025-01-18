@@ -76,7 +76,6 @@ export default async function Page({
       </section>
 
       <section className="w-full max-w-6xl bg-white shadow-md rounded-lg p-4">
-        <h2 className="text-xl font-semibold text-gray-700">Census CBP Data</h2>
         <CensusCBP
           state={state}
           county={county}

@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useMemo } from "react";
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from "chart.js";
 import { Doughnut } from "react-chartjs-2";
 
@@ -10,14 +10,17 @@ export function LabourDoughnut({
 }) {
   ChartJS.register(ArcElement, Tooltip, Legend);
 
-  const colors: any = [];
-  for (const _ of doughnutData) {
-    colors.push(
-      `rgb(${Math.floor(Math.random() * 256)},${Math.floor(
-        Math.random() * 256
-      )},${Math.floor(Math.random() * 256)})`
-    );
-  }
+  const colors: string[] = useMemo(() => {
+    const hashToColor = (str: string): string => {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const color = `rgb(${(hash & 0xff0000) >> 16},${(hash & 0x00ff00) >> 8},${hash & 0x0000ff})`;
+      return color;
+    };
+    return doughnutData.map((item) => hashToColor(item.label));
+  }, [doughnutData]);
 
   const sortedEmpData = [...doughnutData]
     .sort((a, b) => b.emp - a.emp)
