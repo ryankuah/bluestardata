@@ -16,14 +16,18 @@ export default function CensusCBP({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  const CENSUS_API_KEY = process.env.NEXT_PUBLIC_CENSUS_API_KEY;
-
   const fetchData = async () => {
     setLoading(true);
     setError(false);
     try {
-      const url = `https://api.census.gov/data/2022/cbp?get=NAICS2017,NAICS2017_LABEL,ESTAB,EMP,PAYANN&for=county:${countyFips}&in=state:${stateFips}&key=${CENSUS_API_KEY}`;
-      const response = await fetch(url);
+      const response = await fetch("/api/census", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ stateFips, countyFips }),
+      });
+
       const json = await response.json();
 
       if (response.ok) {
@@ -45,7 +49,7 @@ export default function CensusCBP({
 
         setData(filteredData);
       } else {
-        throw new Error("Failed to fetch data");
+        throw new Error(json.error || "Failed to fetch data");
       }
     } catch (error) {
       console.error("Error fetching data:", error);
