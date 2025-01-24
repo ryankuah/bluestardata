@@ -54,7 +54,7 @@ export default async function page({
           />
         </div>
       </div>
-      <div className="mx-auto flex h-full w-full flex-col bg-white p-2">
+      <div className="flex h-full w-full flex-col bg-white p-2">
         <Labour
           state={state}
           county={county}
