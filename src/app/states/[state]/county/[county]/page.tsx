@@ -25,27 +25,26 @@ export default async function Page({
     },
   });
   const countyObj = stateCounties!.counties.find(
-    (place) => place.name === county
+    (place) => place.name === county,
   );
   const countyBorder = countyObj!.countyBorder as Feature;
 
   return (
-    <div className="flex flex-col items-center w-screen bg-gray-50 p-6 space-y-8">
+    <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
       <header className="text-center">
         <h1 className="text-3xl font-extrabold text-gray-800">
           {county}, {state}
         </h1>
       </header>
 
-      <section className="flex flex-col lg:flex-row gap-6 w-full max-w-6xl bg-white shadow-md rounded-lg p-4">
-        <div className="flex-1 h-80 overflow-hidden rounded-lg">
-          <CountyMap
-            feature={countyBorder}
-            token={env.MAPBOX_TOKEN}
-          />
+      <section className="flex w-full max-w-6xl flex-col gap-6 rounded-lg bg-white p-4 shadow-md lg:flex-row">
+        <div className="h-80 flex-1 overflow-hidden rounded-lg">
+          <CountyMap feature={countyBorder} token={env.MAPBOX_TOKEN} />
         </div>
         <div className="flex-1 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-700">Basic Statistics</h2>
+          <h2 className="text-xl font-semibold text-gray-700">
+            Basic Statistics
+          </h2>
           <p className="text-gray-600">Population: TBD</p>
           <p className="text-gray-600">Median Age: TBD</p>
           <p className="text-gray-600">Median Income: TBD</p>
@@ -54,9 +53,10 @@ export default async function Page({
         </div>
       </section>
 
-
-      <section className="w-full max-w-6xl bg-white shadow-md rounded-lg p-4">
-        <h2 className="text-xl font-semibold text-gray-700">Unemployment Data</h2>
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <h2 className="text-xl font-semibold text-gray-700">
+          Unemployment Data
+        </h2>
         <Unemployment
           state={state}
           county={county}
@@ -65,8 +65,8 @@ export default async function Page({
         />
       </section>
 
-      <section className="w-full max-w-6xl flex flex-col lg:flex-row gap-6">
-        <div className="flex-1 bg-white shadow-md rounded-lg p-4">
+      <section className="flex w-full max-w-6xl flex-col gap-6 lg:flex-row">
+        <div className="flex-1 rounded-lg bg-white p-4 shadow-md">
           <Labour
             state={state}
             county={county}
@@ -74,9 +74,19 @@ export default async function Page({
             countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
           />
         </div>
-      </div>
-      <div className="mx-auto flex h-full w-full flex-col bg-white p-2">
-        <Labour
+      </section>
+
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <CensusCBP
+          state={state}
+          county={county}
+          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+        />
+      </section>
+
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <BLSQCEW
           state={state}
           county={county}
           stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
