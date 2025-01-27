@@ -27,8 +27,8 @@ export function FREDData({
   const [observation, setObservation] = useState<Observations[]>(observations);
   const [search, setSearch] = useState<string>("");
   const [codes, setCodes] = useState<[string, string][]>(
-    Array.from(new Set(code.map((item) => JSON.stringify(item)))).map((item) =>
-      JSON.parse(item)
+    Array.from(new Set(code.map((item) => JSON.stringify(item)))).map(
+      (item) => JSON.parse(item) as [string, string]
     )
   );
   const [selectedCodes, setSelectedCodes] = useState<[string, string][]>([]);
