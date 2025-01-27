@@ -29,8 +29,7 @@ export default async function Page({
   const countyObj = stateCounties!.counties.find(
     (place) => place.name === county,
   );
-  const countyBorder = countyObj!.countyBorder as Feature;
-  
+  const countyBorder = countyObj!.countyBorder as Feature;  
 
   return (
     <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
@@ -79,23 +78,23 @@ export default async function Page({
         </div>
       </section>
 
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+       <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <CensusCBP
           state={state}
           county={county}
           stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
           countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
         />
-      </section>
+      </section> 
 
-      {/* <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+       <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <BLSQCEW
           state={state}
           county={county}
           stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
           countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
         />
-      </section> */}
+      </section> 
 
       <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <PopulationEstimates 
