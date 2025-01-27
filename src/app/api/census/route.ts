@@ -1,3 +1,5 @@
+import { NextResponse } from 'next/server';
+
 const CENSUS_API_URL = "https://api.census.gov/data/2022/cbp";
 
 type CensusRequestBody = {
@@ -14,10 +16,7 @@ export async function POST(req: Request) {
     const { stateFips, countyFips } = body;
 
     if (!stateFips || !countyFips) {
-      return new Response(
-        JSON.stringify({ error: "Missing required parameters" }),
-        { status: 400, headers: { "Content-Type": "application/json" } },
-      );
+      return NextResponse.json({ error: "Missing required parameters" }, { status: 400 });
     }
 
     const url = `${CENSUS_API_URL}?get=NAICS2017,NAICS2017_LABEL,ESTAB,EMP,PAYANN&for=county:${countyFips}&in=state:${stateFips}&key=${process.env.NEXT_PUBLIC_CENSUS_API_KEY}`;
@@ -25,26 +24,17 @@ export async function POST(req: Request) {
     const response = await fetch(url);
 
     if (!response.ok) {
-      return new Response(
-        JSON.stringify({ error: "Failed to fetch data from Census API" }),
-        {
-          status: response.status,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+      return NextResponse.json({ error: "Failed to fetch data from Census API" }, { status: response.status });
     }
 
-    const data: CensusResponse = (await response.json()) as CensusResponse;
-
-    return new Response(JSON.stringify(data), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    try {
+      const data: CensusResponse = (await response.json()) as CensusResponse;
+      return NextResponse.json(data, { status: 200 });
+    } catch (error) {
+      return NextResponse.json({ error: "Error parsing data from Census API" }, { status: 500 });
+    }
   } catch (error) {
     console.error("Error fetching data from Census API:", error);
-    return new Response(JSON.stringify({ error: "Internal server error" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

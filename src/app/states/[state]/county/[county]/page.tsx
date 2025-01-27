@@ -8,6 +8,8 @@ import Unemployment from "./unemployment";
 import Labour from "./employment";
 import CensusCBP from "@/components/census/cbp";
 import BLSQCEW from "@/components/bls/qcew";
+import PopulationEstimates from "@/components/population_estimates/population_estimates";
+import axios from "axios";
 
 export default async function Page({
   params,
@@ -28,6 +30,7 @@ export default async function Page({
     (place) => place.name === county,
   );
   const countyBorder = countyObj!.countyBorder as Feature;
+  
 
   return (
     <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
@@ -85,12 +88,21 @@ export default async function Page({
         />
       </section>
 
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+      {/* <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <BLSQCEW
           state={state}
           county={county}
           stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
           countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+        />
+      </section> */}
+
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <PopulationEstimates 
+          state={state}
+          county={county}
+          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")} 
+          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")} 
         />
       </section>
     </div>
