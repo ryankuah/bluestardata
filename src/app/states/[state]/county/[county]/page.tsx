@@ -8,6 +8,7 @@ import Unemployment from "./unemployment";
 import Labour from "./employment";
 import CensusCBP from "@/components/census/cbp";
 import BLSQCEW from "@/components/bls/qcew";
+import FRED from "@/components/fred/fred";
 
 export default async function Page({
   params,
@@ -91,6 +92,12 @@ export default async function Page({
           county={county}
           stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
           countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+        />
+      </section>
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <FRED
+          state={state}
+          county={county}
         />
       </section>
     </div>

@@ -107,38 +107,46 @@ export function FREDData({
       <div>
         <h2 className="text-xl font-semibold mb-2">Selected Observations</h2>
         <div className="flex flex-col gap-2">
-          {observation.map((obs) => (
-            <div
-              key={obs.code}
-              className="rounded-md border border-gray-300 shadow-sm"
-            >
-              <div className="flex items-center justify-between px-3 py-2 bg-gray-100">
-                <span>{obs.name}</span>
-                <div className="flex items-center gap-2">
-                  <button className="p-1" onClick={() => toggleTab(obs.code)}>
-                    <HiChevronDown
-                      className={`h-5 w-5 ${
-                        expanded === obs.code ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                  <button
-                    className="p-1 text-red-500 hover:text-red-700"
-                    onClick={() =>
-                      handleCheckboxChange([obs.code, obs.name])
-                    }
-                  >
-                    <HiX className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-              {expanded === obs.code && (
-                <div className="p-3">
-                  <Chart observation={obs} />
-                </div>
-              )}
+          {observation.length === 0 ? (
+            <div className="py-4 text-center text-gray-500">
+              No Observations Selected
             </div>
-          ))}
+          ) : (
+            observation.map((obs) => (
+              <div
+                key={obs.code}
+                className="rounded-md border border-gray-300 shadow-sm"
+              >
+                <div className="flex items-center justify-between px-3 py-2 bg-gray-100">
+                  <span>{obs.name}</span>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className="p-1"
+                      onClick={() => toggleTab(obs.code)}
+                    >
+                      <HiChevronDown
+                        className={`h-5 w-5 ${expanded === obs.code ? "rotate-180" : ""
+                          }`}
+                      />
+                    </button>
+                    <button
+                      className="p-1 text-red-500 hover:text-red-700"
+                      onClick={() =>
+                        handleCheckboxChange([obs.code, obs.name])
+                      }
+                    >
+                      <HiX className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+                {expanded === obs.code && (
+                  <div className="p-3">
+                    <Chart observation={obs} />
+                  </div>
+                )}
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

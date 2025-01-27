@@ -45,18 +45,17 @@ export default async function FRED({
 
   return (
     <div className="flex flex-col">
-      <Image src="/fred.png" alt="FRED" width={32} height={32} />
-      <div className="flex flex-row">
+      <div className="flex items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800 mr-4">FRED Data</h1>
+        <Image src="/fred.png" alt="FRED" width={32} height={32} />
+      </div>
+      <div className="flex flex-row gap-4">
         <div className="w-1/2">
-          <p className="font-bold">State Data</p>
-          <FREDData
-            observations={stateData}
-            code={stateCodes}
-            place={state}
-          />
+          <p className="font-bold text-gray-700 mb-2">State Data</p>
+          <FREDData observations={stateData} code={stateCodes} place={state} />
         </div>
         <div className="w-1/2">
-          <p className="font-bold">County Data</p>
+          <p className="font-bold text-gray-700 mb-2">County Data</p>
           <FREDData
             observations={countyData}
             code={countyCodes}
