@@ -1,7 +1,7 @@
 "use client";
 import { type Observations } from "@/utils";
-import { useState } from "react";
-import { fetchObservation, addObservation } from "@/utils";
+import { useState, useRef, useEffect } from "react";
+import { fetchObservation } from "@/utils";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -13,6 +13,7 @@ import {
   Legend,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
+import { HiChevronDown, HiX } from "react-icons/hi";
 
 export function FREDData({
   observations,
@@ -24,45 +25,122 @@ export function FREDData({
   place: string;
 }) {
   const [observation, setObservation] = useState<Observations[]>(observations);
+  const [search, setSearch] = useState<string>("");
+  const [codes, setCodes] = useState<[string, string][]>(
+    Array.from(new Set(code.map((item) => JSON.stringify(item)))).map((item) =>
+      JSON.parse(item)
+    )
+  );
+  const [selectedCodes, setSelectedCodes] = useState<[string, string][]>([]);
+  const [expanded, setExpanded] = useState<string | null>(null);
+  const [isDropdownOpen, setDropdownOpen] = useState<boolean>(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const [open, setOpen] = useState(false);
+  const filteredCodes = codes.filter((c) =>
+    c[1].toLowerCase().includes(search.toLowerCase())
+  );
 
-  const [codes, setCodes] = useState<[string, string][]>(code);
+  const handleCheckboxChange = async (code: [string, string]) => {
+    const isSelected = selectedCodes.some((c) => c[0] === code[0]);
+    if (isSelected) {
+      setSelectedCodes(selectedCodes.filter((c) => c[0] !== code[0]));
+      setObservation(observation.filter((obs) => obs.code !== code[0]));
+    } else {
+      setSelectedCodes([...selectedCodes, code]);
+      const newObservation = await fetchObservation(code[0], code[1]);
+      setObservation([...observation, newObservation]);
+    }
+  };
+
+  const toggleDropdown = () => setDropdownOpen(!isDropdownOpen);
+
+  const toggleTab = (seriesCode: string) => {
+    setExpanded((prev) => (prev === seriesCode ? null : seriesCode));
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   return (
     <div className="mr-2 flex flex-col">
-      <div className="flex flex-row">
-        <div className="mx-auto"></div>
-        <button
-          className="rounded-sm bg-red-100 outline outline-black"
-          onClick={() => setOpen(!open)}
-        >
-          {open ? "See Data" : "Add More Series"}
-        </button>
-      </div>
-      {open ? (
-        <FREDSeriesPage
-          observations={observation}
-          setObservation={setObservation}
-          codes={codes}
-          setCodes={setCodes}
-          place={place}
+      <div className="relative mb-4">
+        <input
+          type="text"
+          className="w-full rounded-md border p-2 outline-none"
+          placeholder="Search or select series..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          onClick={toggleDropdown}
         />
-      ) : (
-        <FREDDataPage observations={observation} />
-      )}
-    </div>
-  );
-}
-
-function FREDDataPage({ observations }: { observations: Observations[] }) {
-  return (
-    <div>
-      {observations.map((observation) => (
-        <div key={observation.code}>
-          <Chart observation={observation} />
+        {isDropdownOpen && (
+          <div
+            ref={dropdownRef}
+            className="absolute z-10 mt-1 max-h-60 w-full overflow-y-auto rounded-md border bg-white shadow-lg"
+          >
+            {filteredCodes.map((code) => (
+              <label
+                key={code[0]}
+                className="flex items-center px-3 py-2 hover:bg-gray-100"
+              >
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={!!selectedCodes.find((c) => c[0] === code[0])}
+                  onChange={() => handleCheckboxChange(code)}
+                />
+                {code[1]}
+              </label>
+            ))}
+            {filteredCodes.length === 0 && (
+              <div className="px-3 py-2 text-gray-500">No results found</div>
+            )}
+          </div>
+        )}
+      </div>
+      <div>
+        <h2 className="text-xl font-semibold mb-2">Selected Observations</h2>
+        <div className="flex flex-col gap-2">
+          {observation.map((obs) => (
+            <div
+              key={obs.code}
+              className="rounded-md border border-gray-300 shadow-sm"
+            >
+              <div className="flex items-center justify-between px-3 py-2 bg-gray-100">
+                <span>{obs.name}</span>
+                <div className="flex items-center gap-2">
+                  <button className="p-1" onClick={() => toggleTab(obs.code)}>
+                    <HiChevronDown
+                      className={`h-5 w-5 ${
+                        expanded === obs.code ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <button
+                    className="p-1 text-red-500 hover:text-red-700"
+                    onClick={() =>
+                      handleCheckboxChange([obs.code, obs.name])
+                    }
+                  >
+                    <HiX className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              {expanded === obs.code && (
+                <div className="p-3">
+                  <Chart observation={obs} />
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 }
@@ -75,7 +153,7 @@ function Chart({ observation }: { observation: Observations }) {
     LineElement,
     Title,
     Tooltip,
-    Legend,
+    Legend
   );
   const options = {
     responsive: true,
@@ -102,48 +180,4 @@ function Chart({ observation }: { observation: Observations }) {
     ],
   };
   return <Line options={options} data={data} />;
-}
-
-function FREDSeriesPage({
-  observations,
-  setObservation,
-  codes,
-  setCodes,
-  place,
-}: {
-  codes: [string, string][];
-  setCodes: React.Dispatch<React.SetStateAction<[string, string][]>>;
-  observations: Observations[];
-  setObservation: React.Dispatch<React.SetStateAction<Observations[]>>;
-  place: string;
-}) {
-  const handleSubmit = async (code: [string, string], county: string) => {
-    setCodes(codes.filter((existingCode) => existingCode !== code));
-    const newObservation = await fetchObservation(code[0], code[1]);
-    console.log("hi");
-    await addObservation(code, county);
-    setObservation([...observations, newObservation]);
-  };
-  return (
-    <div className="flex h-full w-full flex-col overflow-y-scroll">
-      {codes.map((code) => (
-        <div
-          key={code[0]}
-          className="my-2 flex h-max w-full flex-row rounded-md border border-black p-2"
-        >
-          <div className="flex flex-col">
-            <p>{code[0]} </p>
-            <p>{code[1]} </p>
-          </div>
-          <div className="mx-auto"></div>
-          <button
-            className="rounded-md border border-black bg-green-700"
-            onClick={async () => await handleSubmit(code, place)}
-          >
-            Add Series
-          </button>
-        </div>
-      ))}
-    </div>
-  );
 }
