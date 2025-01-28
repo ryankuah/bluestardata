@@ -54,6 +54,50 @@ export default async function Page({
           <p className="text-gray-600">Unemployment Rate: TBD</p>
         </div>
       </section>
+
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <h2 className="text-xl font-semibold text-gray-700">
+          Unemployment Data
+        </h2>
+        <Unemployment
+          state={state}
+          county={county}
+          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+        />
+      </section>
+
+      <section className="flex w-full max-w-6xl flex-col gap-6 lg:flex-row">
+        <div className="flex-1 rounded-lg bg-white p-4 shadow-md">
+          <Labour
+            state={state}
+            county={county}
+            stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+            countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+          />
+        </div>
+      </section>
+
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <CensusCBP
+          state={state}
+          county={county}
+          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+        />
+      </section>
+
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <BLSQCEW
+          state={state}
+          county={county}
+          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
+          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+        />
+      </section>
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <FRED state={state} county={county} />
+      </section>
       <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <PopulationEstimates
           state={state}
