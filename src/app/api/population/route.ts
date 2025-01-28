@@ -56,27 +56,54 @@ function constructCharAgeGroupsApiUrl({
   return url;
 }
 
-interface PostRequestBody {
+type PostRequestBody = {
   stateFips: string;
   countyFips?: string;
   year: number;
-}
+};
 
-interface CensusApiResponseItem {
+type PopDataRow = [
+  string,
+  string | null,
+  string,
+  string,
+  string,
+  string | null,
+  string,
+  string,
+  string | null,
+  string | null,
+  string,
+  string,
+  string,
+];
+
+type AgeDataRow = [
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+  string,
+];
+
+type CensusApiResponseItem = {
   density: number;
-  region: string;
+  region: string | null;
   state: string;
   county: string;
   geoId: string;
-  funcStat: string;
+  funcStat: string | null;
   pop: number;
   lastUpdate: string;
-  division: string;
-  primGeoFlag: string;
+  division: string | null;
+  primGeoFlag: string | null;
   dateCode: string;
-}
+};
 
-interface CharAgeGroupsApiResponseItem {
+type CharAgeGroupsApiResponseItem = {
   ageGroup: string;
   pop: number;
   sex: string;
@@ -85,7 +112,7 @@ interface CharAgeGroupsApiResponseItem {
   state: string;
   county: string;
   dateCode: string;
-}
+};
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
@@ -120,21 +147,23 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
-    const populationRawData = await populationResponse.json();
-    const populationData = populationRawData.slice(1).map((item: any) => ({
-      density: parseFloat(item[0]),
-      region: item[1],
-      state: item[2],
-      county: item[3],
-      geoId: item[4],
-      funcStat: item[5],
-      pop: parseInt(item[6], 10),
-      lastUpdate: item[7],
-      division: item[8],
-      primGeoFlag: item[9],
-      dateCode: item[10],
-    }));
-    console.log(populationRawData);
+    const populationRawData =
+      (await populationResponse.json()) as unknown as PopDataRow[];
+    const populationData: CensusApiResponseItem[] = populationRawData
+      .slice(1)
+      .map((item) => ({
+        density: parseFloat(item[0]),
+        region: item[1],
+        state: item[2],
+        county: item[3],
+        geoId: item[4],
+        funcStat: item[5],
+        pop: parseInt(item[6], 10),
+        lastUpdate: item[7],
+        division: item[8],
+        primGeoFlag: item[9],
+        dateCode: item[10],
+      }));
 
     // Fetch charagegroups data
     const charAgeGroupsUrl = constructCharAgeGroupsApiUrl({
@@ -150,10 +179,10 @@ export async function POST(req: NextRequest): Promise<Response> {
       );
     }
 
-    const charAgeGroupsRawData = await charAgeGroupsResponse.json();
-    const charAgeGroupsData = charAgeGroupsRawData
-      .slice(1)
-      .map((item: any) => ({
+    const charAgeGroupsRawData =
+      (await charAgeGroupsResponse.json()) as unknown as AgeDataRow[];
+    const charAgeGroupsData: CharAgeGroupsApiResponseItem[] =
+      charAgeGroupsRawData.slice(1).map((item) => ({
         ageGroup: item[0],
         pop: parseInt(item[1], 10),
         sex: item[2],

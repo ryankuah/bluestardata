@@ -27,7 +27,6 @@
     "@turf/boolean-within": "^7.1.0",
     "@types/geojson": "^7946.0.15",
     "@types/mapbox-gl": "^3.4.1",
-    "axios": "^1.7.9",
     "chart.js": "^4.4.7",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
