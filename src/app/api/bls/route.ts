@@ -1,3 +1,4 @@
+import { env } from "@/env";
 const BLS_API_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/";
 
 type BLSRequestPayload = {
@@ -44,6 +45,8 @@ export async function POST(req: Request): Promise<Response> {
       startyear,
       endyear,
     };
+
+    console.log(process.env.NEXT_PUBLIC_BLS_API_KEY);
 
     const response = await fetch(BLS_API_URL, {
       method: "POST",
@@ -107,3 +110,4 @@ function isBLSResponse(data: unknown): data is BLSResponse {
     ("Results" in data || "message" in data)
   );
 }
+
