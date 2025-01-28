@@ -19,6 +19,7 @@ export const env = createEnv({
       .enum(["development", "test", "production"])
       .default("development"),
     MAPBOX_TOKEN: z.string(),
+    CENSUS_API_KEY: z.string(),
   },
 
   /**
@@ -42,6 +43,7 @@ export const env = createEnv({
     FRED_API_KEY: process.env.FRED_API_KEY,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
+    CENSUS_API_KEY: process.env.CENSUS_API_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

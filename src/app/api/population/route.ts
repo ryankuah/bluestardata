@@ -1,7 +1,8 @@
-import { NextRequest } from "next/server";
+import { type NextRequest } from "next/server";
+import { env } from "@/env";
 
 const POPULATION_API_URL = "https://api.census.gov/data/";
-const CENSUS_API_KEY = process.env.CENSUS_API_KEY;
+const CENSUS_API_KEY = env.CENSUS_API_KEY;
 
 if (!CENSUS_API_KEY) {
   throw new Error("Census API Key is not set in the environment variables.");
@@ -33,7 +34,7 @@ function constructPopulationApiUrl({
   } else {
     url += `&for=county:*`;
   }
-
+  console.log(url);
   return url;
 }
 
@@ -88,7 +89,7 @@ interface CharAgeGroupsApiResponseItem {
 
 export async function POST(req: NextRequest): Promise<Response> {
   try {
-    const body: PostRequestBody = await req.json();
+    const body = (await req.json()) as unknown as PostRequestBody;
     const { stateFips, countyFips, year } = body;
 
     if (!stateFips) {
@@ -133,6 +134,7 @@ export async function POST(req: NextRequest): Promise<Response> {
       primGeoFlag: item[9],
       dateCode: item[10],
     }));
+    console.log(populationRawData);
 
     // Fetch charagegroups data
     const charAgeGroupsUrl = constructCharAgeGroupsApiUrl({
