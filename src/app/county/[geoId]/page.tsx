@@ -8,7 +8,6 @@ import Unemployment from "./unemployment";
 import Labour from "./employment";
 import CensusCBP from "@/components/census/cbp";
 import BLSQCEW from "@/components/bls/qcew";
-import FRED from "@/components/fred/fred";
 import PopulationEstimates from "@/components/population_estimates/population_estimates";
 import { type County } from "@/utils/map/types";
 
