@@ -2,8 +2,8 @@ import { db } from "@/server/db";
 import {
   fetchObservations,
   fetchSeries,
-  type FredData,
-} from "@/desktop/projects/bluestardata/src/utils";
+} from "@/utils/fred/utils";
+import {  type FredData } from "@/utils/fred/types";
 import { FREDData } from "./fredData";
 import Image from "next/image";
 
