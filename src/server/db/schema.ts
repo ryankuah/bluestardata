@@ -2,7 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   index,
   integer,
-  pgTableCreator,
+  pgTable,
   primaryKey,
   text,
   timestamp,
@@ -12,116 +12,71 @@ import {
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
-/**
- * This is an example of how to use the multi-project schema feature of Drizzle ORM. Use the same
- * database instance for multiple projects.
- *
- * @see https://orm.drizzle.team/docs/goodies#multi-project-schema
- */
-export const createTable = pgTableCreator((name) => `bluestardata_${name}`);
-
-export const countries = createTable("country", {
-  id: serial("id").notNull().primaryKey(),
+export const states = pgTable("state", {
+  fipsCode: integer("fips_code").notNull().primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
+  border: jsonb("border"),
+  abbreviation: varchar("abbreviation", { length: 2 }),
 });
 
-export const states = createTable("state", {
-  id: serial("id").notNull().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  countryId: integer("country_id")
-    .notNull()
-    .references(() => countries.id),
-  fredId: integer("fred_id").unique(),
-  stateBorder: jsonb("state_border"),
-  fipsCode: integer("fipsCode"),
-});
-
-export const counties = createTable("county", {
-  id: serial("id").notNull().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  stateId: integer("state_id")
-    .notNull()
-    .references(() => states.id),
-  fredId: integer("fred_id").unique(),
-  countyBorder: jsonb("county_border"),
-  fipsCode: integer("fips_code"),
-  gnisId: integer("gnis_id"),
-  lsad: integer("lsad"),
-  aland: varchar("aland", { length: 255 }),
-  awater: varchar("awater", { length: 255 }),
-});
-
-export const msas = createTable("msa", {
-  id: serial("id").notNull().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
-  stateId: integer("state_id")
-    .notNull()
-    .references(() => states.id),
-  fredId: integer("fred_id").notNull().unique(),
-});
-
-export const fredData = createTable("fred_data", {
-  id: serial("id").notNull().primaryKey(),
-  seriesCode: varchar("series_code", { length: 255 }).notNull(),
-  name: varchar("name", { length: 255 }),
-  type: varchar("type", { length: 255 }),
-  countryId: integer("country_id").references(() => countries.id),
-  stateId: integer("state_id").references(() => states.id),
-  countyId: integer("county_id").references(() => counties.id),
-  msaId: integer("msa_id").references(() => msas.id),
-});
-
-export const countriesRelations = relations(countries, ({ many }) => ({
-  states: many(states),
-  fredData: many(fredData),
-}));
-
-export const statesRelations = relations(states, ({ many, one }) => ({
+export const statesRelations = relations(states, ({ many }) => ({
   counties: many(counties),
-  msas: many(msas),
-  fredData: many(fredData),
-  country: one(countries, {
-    fields: [states.countryId],
-    references: [countries.id],
-  }),
+  data: many(stateDatas),
 }));
 
-export const msasRelations = relations(msas, ({ many, one }) => ({
-  fredData: many(fredData),
-  state: one(states, {
-    fields: [msas.stateId],
-    references: [states.id],
-  }),
-}));
+export const counties = pgTable("county", {
+  geoId: varchar("geo_id", { length: 5 }).notNull().primaryKey(),
+  fipsCode: integer("fips_code").notNull(),
+  name: varchar("name", { length: 255 }).notNull(),
+  border: jsonb("border"),
+  stateId: integer("state_id")
+    .notNull()
+    .references(() => states.fipsCode),
+});
 
-export const countiesRelations = relations(counties, ({ many, one }) => ({
-  fredData: many(fredData),
+export const countiesRelations = relations(counties, ({ one, many }) => ({
   state: one(states, {
     fields: [counties.stateId],
-    references: [states.id],
+    references: [states.fipsCode],
   }),
+  data: many(countyDatas),
 }));
 
-export const fredDataRelations = relations(fredData, ({ one }) => ({
-  country: one(countries, {
-    fields: [fredData.countryId],
-    references: [countries.id],
-  }),
+export const stateDatas = pgTable("state_data", {
+  id: serial("id").notNull().primaryKey(),
+  stateId: integer("state_id")
+    .notNull()
+    .references(() => states.fipsCode),
+  category: varchar("category", { length: 255 }),
+  name: varchar("name", { length: 255 }).notNull(),
+  data: jsonb("data").notNull(),
+});
+
+export const stateDatasRelation = relations(stateDatas, ({ one }) => ({
   state: one(states, {
-    fields: [fredData.stateId],
-    references: [states.id],
-  }),
-  county: one(counties, {
-    fields: [fredData.countyId],
-    references: [counties.id],
-  }),
-  msa: one(msas, {
-    fields: [fredData.msaId],
-    references: [msas.id],
+    fields: [stateDatas.stateId],
+    references: [states.fipsCode],
   }),
 }));
 
-export const users = createTable("user", {
+export const countyDatas = pgTable("county_data", {
+  id: serial("id").notNull().primaryKey(),
+  countyId: varchar("county_id", { length: 5 })
+    .notNull()
+    .references(() => counties.geoId),
+  category: varchar("category", { length: 255 }),
+  name: varchar("name", { length: 255 }).notNull(),
+  data: jsonb("data").notNull(),
+});
+
+export const countyDataRelations = relations(countyDatas, ({ one }) => ({
+  county: one(counties, {
+    fields: [countyDatas.countyId],
+    references: [counties.geoId],
+  }),
+}));
+
+export const users = pgTable("user", {
   id: varchar("id", { length: 255 })
     .notNull()
     .primaryKey()
@@ -139,7 +94,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   accounts: many(accounts),
 }));
 
-export const accounts = createTable(
+export const accounts = pgTable(
   "account",
   {
     userId: varchar("user_id", { length: 255 })
@@ -172,7 +127,7 @@ export const accountsRelations = relations(accounts, ({ one }) => ({
   user: one(users, { fields: [accounts.userId], references: [users.id] }),
 }));
 
-export const sessions = createTable(
+export const sessions = pgTable(
   "session",
   {
     sessionToken: varchar("session_token", { length: 255 })
@@ -195,7 +150,7 @@ export const sessionsRelations = relations(sessions, ({ one }) => ({
   user: one(users, { fields: [sessions.userId], references: [users.id] }),
 }));
 
-export const verificationTokens = createTable(
+export const verificationTokens = pgTable(
   "verification_token",
   {
     identifier: varchar("identifier", { length: 255 }).notNull(),

@@ -1,5 +1,5 @@
 import { db } from "@/server/db";
-import { counties, states } from "@/server/db/schema";
+import { counties } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { env } from "@/env";
 import CountyMap from "./map";
@@ -10,26 +10,37 @@ import CensusCBP from "@/components/census/cbp";
 import BLSQCEW from "@/components/bls/qcew";
 import FRED from "@/components/fred/fred";
 import PopulationEstimates from "@/components/population_estimates/population_estimates";
+import { type County } from "@/utils/map/types";
 
 export default async function Page({
   params,
 }: {
-  params: Promise<{ state: string; county: string }>;
+  params: Promise<{ geoId: string }>;
 }) {
-  const stateSlug = (await params).state;
-  const countySlug = (await params).county;
-  const state = decodeURIComponent(stateSlug);
-  const county = decodeURIComponent(countySlug);
-  const stateCounties = await db.query.states.findFirst({
-    where: eq(states.name, state),
+  type dbObj = County & {
+    state: {
+      name: string;
+    };
+  };
+
+  const geoId = (await params).geoId;
+  const dbObj = await db.query.counties.findFirst({
+    where: eq(counties.geoId, geoId),
     with: {
-      counties: true,
+      state: true,
     },
   });
-  const countyObj = stateCounties!.counties.find(
-    (place) => place.name === county,
-  );
-  const countyBorder = countyObj!.countyBorder as Feature;
+
+  const countyBorder = dbObj?.border as Feature;
+
+  const state = dbObj?.state?.name;
+  const stateFips = dbObj?.stateId.toString().padStart(2, "0");
+
+  const county = dbObj?.name;
+  const countyFips = dbObj?.fipsCode.toString().padStart(3, "0");
+
+  if (!state || !stateFips || !county || !countyFips)
+    throw new Error("Invalid state");
 
   return (
     <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
@@ -62,8 +73,8 @@ export default async function Page({
         <Unemployment
           state={state}
           county={county}
-          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
-          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+          stateFips={stateFips}
+          countyFips={countyFips}
         />
       </section>
 
@@ -72,8 +83,8 @@ export default async function Page({
           <Labour
             state={state}
             county={county}
-            stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
-            countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+            stateFips={stateFips}
+            countyFips={countyFips}
           />
         </div>
       </section>
@@ -82,8 +93,8 @@ export default async function Page({
         <CensusCBP
           state={state}
           county={county}
-          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
-          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+          stateFips={stateFips}
+          countyFips={countyFips}
         />
       </section>
 
@@ -91,19 +102,21 @@ export default async function Page({
         <BLSQCEW
           state={state}
           county={county}
-          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
-          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+          stateFips={stateFips}
+          countyFips={countyFips}
         />
       </section>
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <FRED state={state} county={county} />
-      </section>
+      {
+        // <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        //   <FRED state={state} county={county} />
+        // </section>
+      }
       <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <PopulationEstimates
           state={state}
           county={county}
-          stateFips={stateCounties!.fipsCode!.toString().padStart(2, "0")}
-          countyFips={countyObj!.fipsCode!.toString().padStart(3, "0")}
+          stateFips={stateFips}
+          countyFips={countyFips}
         />
       </section>
     </div>

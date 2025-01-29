@@ -1,4 +1,4 @@
-import type { FillLayer } from "react-map-gl";
+import type { FillLayer, LayerProps } from "react-map-gl";
 
 export const dataLayer: FillLayer = {
   id: "data",
@@ -20,5 +20,15 @@ export const dataLayer: FillLayer = {
       ],
     },
     "fill-opacity": 0.8,
+  },
+};
+
+export const borderLayer: LayerProps = {
+  id: "borders",
+  type: "line",
+  paint: {
+    "line-color": "#000",
+    "line-width": 1,
+    "line-opacity": 0.8,
   },
 };

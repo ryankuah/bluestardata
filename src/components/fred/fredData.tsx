@@ -1,7 +1,7 @@
 "use client";
-import { type Observations } from "@/utils";
+import { type Observations } from "@/utils/fred/types";
 import { useState, useRef, useEffect } from "react";
-import { fetchObservation } from "@/utils";
+import { fetchObservation } from "@/utils/fred/utils";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,8 +28,8 @@ export function FREDData({
   const [search, setSearch] = useState<string>("");
   const [codes, setCodes] = useState<[string, string][]>(
     Array.from(new Set(code.map((item) => JSON.stringify(item)))).map(
-      (item) => JSON.parse(item) as [string, string]
-    )
+      (item) => JSON.parse(item) as [string, string],
+    ),
   );
   const [selectedCodes, setSelectedCodes] = useState<[string, string][]>([]);
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -37,7 +37,7 @@ export function FREDData({
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const filteredCodes = codes.filter((c) =>
-    c[1].toLowerCase().includes(search.toLowerCase())
+    c[1].toLowerCase().includes(search.toLowerCase()),
   );
 
   const handleCheckboxChange = async (code: [string, string]) => {
@@ -60,7 +60,10 @@ export function FREDData({
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     };
@@ -105,7 +108,7 @@ export function FREDData({
         )}
       </div>
       <div>
-        <h2 className="text-xl font-semibold mb-2">Selected Observations</h2>
+        <h2 className="mb-2 text-xl font-semibold">Selected Observations</h2>
         <div className="flex flex-col gap-2">
           {observation.length === 0 ? (
             <div className="py-4 text-center text-gray-500">
@@ -117,23 +120,19 @@ export function FREDData({
                 key={obs.code}
                 className="rounded-md border border-gray-300 shadow-sm"
               >
-                <div className="flex items-center justify-between px-3 py-2 bg-gray-100">
+                <div className="flex items-center justify-between bg-gray-100 px-3 py-2">
                   <span>{obs.name}</span>
                   <div className="flex items-center gap-2">
-                    <button
-                      className="p-1"
-                      onClick={() => toggleTab(obs.code)}
-                    >
+                    <button className="p-1" onClick={() => toggleTab(obs.code)}>
                       <HiChevronDown
-                        className={`h-5 w-5 ${expanded === obs.code ? "rotate-180" : ""
-                          }`}
+                        className={`h-5 w-5 ${
+                          expanded === obs.code ? "rotate-180" : ""
+                        }`}
                       />
                     </button>
                     <button
                       className="p-1 text-red-500 hover:text-red-700"
-                      onClick={() =>
-                        handleCheckboxChange([obs.code, obs.name])
-                      }
+                      onClick={() => handleCheckboxChange([obs.code, obs.name])}
                     >
                       <HiX className="h-5 w-5" />
                     </button>
@@ -161,7 +160,7 @@ function Chart({ observation }: { observation: Observations }) {
     LineElement,
     Title,
     Tooltip,
-    Legend
+    Legend,
   );
   const options = {
     responsive: true,

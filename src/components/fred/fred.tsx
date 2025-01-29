@@ -1,5 +1,9 @@
 import { db } from "@/server/db";
-import { fetchObservations, fetchSeries, type FredData } from "@/utils";
+import {
+  fetchObservations,
+  fetchSeries,
+  type FredData,
+} from "@/desktop/projects/bluestardata/src/utils";
 import { FREDData } from "./fredData";
 import Image from "next/image";
 
@@ -31,8 +35,8 @@ export default async function FRED({
   const stateData = await fetchObservations(stateFredCodes);
   const countyData = await fetchObservations(countyFredCodes);
 
-  const allStateSeries = await fetchSeries(stateObj.fredId!);
-  const allCountySeries = await fetchSeries(countyObj.fredId!);
+  const allStateSeries = await fetchSeries(stateObj.fredId);
+  const allCountySeries = await fetchSeries(countyObj.fredId);
 
   const stateCodes: [string, string][] = allStateSeries.map((series) => [
     series.id,
@@ -45,17 +49,17 @@ export default async function FRED({
 
   return (
     <div className="flex flex-col">
-      <div className="flex items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mr-4">FRED Data</h1>
+      <div className="mb-6 flex items-center">
+        <h1 className="mr-4 text-2xl font-bold text-gray-800">FRED Data</h1>
         <Image src="/fred.png" alt="FRED" width={32} height={32} />
       </div>
       <div className="flex flex-row gap-4">
         <div className="w-1/2">
-          <p className="font-bold text-gray-700 mb-2">State Data</p>
+          <p className="mb-2 font-bold text-gray-700">State Data</p>
           <FREDData observations={stateData} code={stateCodes} place={state} />
         </div>
         <div className="w-1/2">
-          <p className="font-bold text-gray-700 mb-2">County Data</p>
+          <p className="mb-2 font-bold text-gray-700">County Data</p>
           <FREDData
             observations={countyData}
             code={countyCodes}
