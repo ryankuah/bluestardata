@@ -63,7 +63,7 @@ export function MainMap({token, state, allCounties}:{
     const feature = e.features![0];
     if (!feature) return;
 
-    const stateCounty = allCounties!.find(
+    const stateCounty = allCounties.find(
       (county) => county.fipsCode === feature.properties?.fipsCode,
     );
     if (!stateCounty) return;
