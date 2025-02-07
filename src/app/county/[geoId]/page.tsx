@@ -6,7 +6,7 @@ import CountyMap from "./map";
 import { type Feature } from "geojson";
 import Unemployment from "./unemployment";
 import Labour from "./employment";
-import BLSQCEW from "@/components/bls/qcew";
+import BLSDataFetcher from "@/components/bls/BLSDataFetcher";
 import PopulationEstimates from "@/components/population_estimates/population_estimates";
 import { type County } from "@/utils/map/types";
 import CensusDataFetcher from "@/components/census/CensusDataFetcher";
@@ -98,7 +98,7 @@ export default async function Page({
       </section>
 
       <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <BLSQCEW
+        <BLSDataFetcher
           state={state}
           county={county}
           stateFips={stateFips}
