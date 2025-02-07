@@ -40,9 +40,8 @@ export default function BLSQCEW({
                 return (
                     <div
                         key={code}
-                        className={`w-full border border-gray-200 rounded-lg transition-all duration-200 ${
-                            isExpanded ? "bg-white shadow-lg" : "bg-gray-50 hover:bg-gray-100"
-                        }`}
+                        className={`w-full border border-gray-200 rounded-lg transition-all duration-200 ${isExpanded ? "bg-white shadow-lg" : "bg-gray-50 hover:bg-gray-100"
+                            }`}
                     >
                         <button
                             onClick={() => setExpandedGraph(isExpanded ? null : code)}
@@ -58,13 +57,15 @@ export default function BLSQCEW({
                                     <LineChart data={data}>
                                         <XAxis dataKey="year" />
                                         <YAxis
-                                            tickFormatter={(value) =>
-                                                value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}M` : value
-                                            }
+                                            tickFormatter={(value: unknown) => {
+                                                if (typeof value !== "number" || isNaN(value)) return "";
+                                                return value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)}M` : value.toString();
+                                            }}
+
                                         />
                                         <Tooltip formatter={(value: number) => value.toLocaleString()} />
                                         <Legend />
-                                        {Object.keys(data[0]?.data?.[code] || {}).map((industry, idx) => (
+                                        {Object.keys(data[0]?.data?.[code] ?? {}).map((industry, idx) => (
                                             <Line
                                                 key={industry}
                                                 type="monotone"

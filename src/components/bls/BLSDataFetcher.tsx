@@ -26,7 +26,7 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
         `https://api.census.gov/data/2022/cbp?get=EMP,ESTAB,NAICS2017_LABEL,NAME&for=county:${countyFips}&in=state:${stateFips}&NAICS2017=*`
     ).catch((err) => console.error("Error fetching Census CBP data:", err));
 
-    if (!labourResponse || !labourResponse.ok) {
+    if (!labourResponse?.ok) {
         throw new Error("Failed to fetch Census CBP data");
     }
 
@@ -39,8 +39,8 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
     const topIndustries = labourData
         .slice(1)
         .map(([employees, establishments, industry, countyName, naics, state, county]) => ({
-            employees: Number(employees) || 0,
-            establishments: Number(establishments) || 0,
+            employees: Number(employees) ?? 0,
+            establishments: Number(establishments) ?? 0,
             industry,
             countyName,
             naicsCode: naics,
@@ -60,7 +60,7 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
         dataTypes.map((dataType) => `ENU${areaCode}${dataType}${size}${ownership}${industry}`)
     );
 
-    console.log(seriesIds)
+    console.log(seriesIds);
 
     const payload = {
         seriesid: seriesIds,
@@ -81,7 +81,7 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
 
     const json = (await response.json()) as BLSResponse;
 
-    if (!json.Results || !json.Results.series || json.Results.series.length === 0) {
+    if (!json.Results?.series?.length) {
         throw new Error("No results returned from BLS API");
     }
 
@@ -90,22 +90,21 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
     for (const series of json.Results.series) {
         if (!series.seriesID || !series.data) continue;
 
-        const match = series.seriesID.match(/ENU\d{5}(\d)(\d)(\d)(\d+)/);
+        const match = /ENU\d{5}(\d)(\d)(\d)(\d+)/.exec(series.seriesID);
         if (!match || match.length < 5) continue;
 
         const dataType = match[1];
         const industry = match[4];
 
-        if (!dataType || !industry) continue; // Ensure values are defined
+        if (!dataType || !industry) continue;
 
-        const industryName = industryMap[industry] || `NAICS ${industry}`;
+        const industryName = industryMap[industry] ?? `NAICS ${industry}`;
 
         for (const { year, value } of series.data) {
-            summary[year] = summary[year] || { year, data: {} };
-            summary[year].data[dataType] = summary[year].data[dataType] || {};
-            summary[year].data[dataType][industryName] = Number(value) || 0;
+            summary[year] ??= { year, data: {} };
+            summary[year].data[dataType] ??= {};
+            summary[year].data[dataType][industryName] = Number(value) ?? 0;
         }
-
     }
 
     console.log(summary);
@@ -114,19 +113,19 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
 }
 
 export default async function BLSDataFetcher({
-    state,
-    county,
+    _state,
+    _county,
     stateFips,
     countyFips,
 }: {
-    state: string;
-    county: string;
+    _state: string;
+    _county: string;
     stateFips: string;
     countyFips: string;
 }) {
     try {
         const summaryData = await fetchBLSData(stateFips, countyFips);
-        return <BLSQCEW data={summaryData} state={state} county={county} />;
+        return <BLSQCEW data={summaryData} state={_state} county={_county} />;
     } catch (error) {
         console.error("Error fetching BLS data:", error);
         return <div className="text-red-500 text-center">Failed to load data</div>;

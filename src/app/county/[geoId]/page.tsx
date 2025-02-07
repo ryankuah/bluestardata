@@ -99,8 +99,8 @@ export default async function Page({
 
       <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <BLSDataFetcher
-          state={state}
-          county={county}
+          _state={state}
+          _county={county}
           stateFips={stateFips}
           countyFips={countyFips}
         />
