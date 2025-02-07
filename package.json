@@ -24,6 +24,7 @@
     "@auth/drizzle-adapter": "^1.7.2",
     "@radix-ui/react-slot": "^1.1.0",
     "@t3-oss/env-nextjs": "^0.10.1",
+    "@tanstack/react-table": "^8.20.6",
     "@turf/bbox": "^7.1.0",
     "@turf/boolean-within": "^7.1.0",
     "@types/geojson": "^7946.0.15",
