@@ -9,7 +9,7 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 
-import { CensusRow } from "./CensusDataFetcher";
+import { type CensusRow } from "./CensusDataFetcher";
 
 export default function CensusCBP({
   data,
@@ -43,7 +43,7 @@ export default function CensusCBP({
         accessorKey: "annualPayroll",
       },
     ],
-    []
+    [],
   );
 
   const [filter, setFilter] = React.useState("");
@@ -85,9 +85,12 @@ export default function CensusCBP({
                   <tr key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
                       <th key={header.id} className="px-4 py-2">
-                        <div className="flex flex-col items-center w-32"> 
+                        <div className="flex w-32 flex-col items-center">
                           <span className="mb-1 font-semibold">
-                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
                           </span>
                           <div className="flex justify-center space-x-1">
                             <button
@@ -119,7 +122,7 @@ export default function CensusCBP({
                       <td key={cell.id} className="px-4 py-2">
                         {flexRender(
                           cell.column.columnDef.cell,
-                          cell.getContext()
+                          cell.getContext(),
                         )}
                       </td>
                     ))}

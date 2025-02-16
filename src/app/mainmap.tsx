@@ -7,15 +7,23 @@ import {
   type MapRef,
 } from "react-map-gl";
 import { dataLayer, borderLayer } from "./dataLayer";
-import { type GeoJSON, type Feature, type AllCounties } from "@/utils/map/types";
-import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  type GeoJSON,
+  type Feature,
+  type AllCounties,
+} from "@/utils/map/types";
+import { useState, useCallback, useRef } from "react";
 import { bbox } from "@turf/bbox";
 import { useRouter } from "next/navigation";
 
-export function MainMap({token, state, allCounties}:{
+export function MainMap({
+  token,
+  state,
+  allCounties,
+}: {
   token: string;
   state: GeoJSON;
-  allCounties: AllCounties[]
+  allCounties: AllCounties[];
 }) {
   const [hoverInfo, setHoverInfo] = useState<{
     feature: Feature;
@@ -59,7 +67,6 @@ export function MainMap({token, state, allCounties}:{
   };
 
   const stateClick = (e: MapMouseEvent) => {
-
     const feature = e.features![0];
     if (!feature) return;
 
@@ -105,35 +112,34 @@ export function MainMap({token, state, allCounties}:{
   };
 
   return (
-
-        <Map
-          ref={mapRef}
-          initialViewState={{
-            latitude: 40,
-            longitude: -100,
-            zoom: 3,
-          }}
-          mapStyle="mapbox://styles/mapbox/light-v9"
-          mapboxAccessToken={token}
-          style={{ width: "100vw", height: "100vh" }}
-          interactiveLayerIds={["data"]}
-          onMouseMove={onHover}
-          onClick={(e:MapMouseEvent) => {
-            onClick(e);
-          }}
+    <Map
+      ref={mapRef}
+      initialViewState={{
+        latitude: 40,
+        longitude: -100,
+        zoom: 3,
+      }}
+      mapStyle="mapbox://styles/mapbox/light-v9"
+      mapboxAccessToken={token}
+      style={{ width: "100vw", height: "100vh" }}
+      interactiveLayerIds={["data"]}
+      onMouseMove={onHover}
+      onClick={(e: MapMouseEvent) => {
+        onClick(e);
+      }}
+    >
+      <Source type="geojson" data={data}>
+        <Layer {...dataLayer} />
+        <Layer {...borderLayer} />
+      </Source>
+      {hoverInfo && (
+        <div
+          className="absolute m-2 h-max w-max bg-gray-500 p-1"
+          style={{ left: hoverInfo.x, top: hoverInfo.y }}
         >
-          <Source type="geojson" data={data}>
-            <Layer {...dataLayer} />
-            <Layer {...borderLayer} />
-          </Source>
-          {hoverInfo && (
-            <div
-              className="absolute m-2 h-max w-max bg-gray-500 p-1"
-              style={{ left: hoverInfo.x, top: hoverInfo.y }}
-            >
-              <div>{hoverInfo.feature.properties.name}</div>
-            </div>
-          )}
-        </Map>
+          <div>{hoverInfo.feature.properties.name}</div>
+        </div>
+      )}
+    </Map>
   );
 }
