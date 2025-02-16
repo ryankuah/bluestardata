@@ -2,17 +2,17 @@ import { addStateData, addCountyData } from "@/app/scripts/scripts";
 import { addFredIds } from "@/utils/fred/utils";
 export default async function Page() {
   async function handleStateData() {
-    'use server'
+    "use server";
     await addStateData();
   }
 
   async function handleCountyData() {
-    'use server'
+    "use server";
     await addCountyData();
   }
 
   async function handleFredIds() {
-    'use server'
+    "use server";
     await addFredIds();
   }
 
@@ -30,3 +30,4 @@ export default async function Page() {
     </div>
   );
 }
+

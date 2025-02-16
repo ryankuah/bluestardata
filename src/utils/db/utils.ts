@@ -9,12 +9,17 @@ export async function addCountyData<T>(
 ): Promise<void> {
   const data = JSON.stringify(input);
   if (!data) throw new Error(`Input not stringified for ${name}`);
-  await db.insert(countyDatas).values({
-    countyId: geoId,
-    category,
-    name,
-    data,
-  });
+  await db
+    .insert(countyDatas)
+    .values({
+      countyId: geoId,
+      category,
+      name,
+      data,
+    })
+    .catch((error) => {
+      console.error(error);
+    });
 }
 
 export async function addStateData<T>(
@@ -50,4 +55,3 @@ export async function getStateData(fipsCode: string, name: string) {
   if (!data) throw new Error(`Data not found for ${name}`);
   return data.data;
 }
-

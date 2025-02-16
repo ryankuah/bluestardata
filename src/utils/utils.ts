@@ -2,8 +2,6 @@ import { db } from "@/server/db";
 import { counties, states } from "@/server/db/schema";
 import { eq, sql } from "drizzle-orm";
 export async function getCountyGeoId(county: string, state: string) {
-  await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
-
   const stateFips = await getStatebyName(state);
 
   const result = await db
@@ -20,7 +18,6 @@ export async function getCountyGeoId(county: string, state: string) {
 }
 
 export async function getStatebyName(name: string) {
-  await db.execute(sql`CREATE EXTENSION IF NOT EXISTS pg_trgm`);
   const result = await db
     .select({
       fipsCode: states.fipsCode,
@@ -33,4 +30,3 @@ export async function getStatebyName(name: string) {
 
   return result[0].fipsCode;
 }
-
