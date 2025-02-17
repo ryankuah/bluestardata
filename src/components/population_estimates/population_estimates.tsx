@@ -10,7 +10,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { AlertCircle, Info } from "lucide-react";
+import { AlertCircle } from "lucide-react";
+import { format } from "node:path/win32";
 
 interface PopulationDashboardProps {
   state: string;
@@ -19,45 +20,75 @@ interface PopulationDashboardProps {
   countyFips: string;
 }
 
-type PopulationData = {
-  density: number;
-  region: string | null;
-  state: string;
-  county: string;
-  geoId: string;
-  funcStat: string | null;
-  pop: number;
-  lastUpdate: string;
-  division: string | null;
-  primGeoFlag: string | null;
-  dateCode: string;
+type ProcessedAcsData = {
+  name: string;
+  totalPopulation: number;
+  malePopulation: {
+    under5: number;
+    under18: number;
+    age18to24: number;
+    age25to44: number;
+    age45to64: number;
+    age65andOver: number;
+    total: number;
+  };
+  femalePopulation: {
+    under5: number;
+    under18: number;
+    age18to24: number;
+    age25to44: number;
+    age45to64: number;
+    age65andOver: number;
+    total: number;
+  };
+  raceAndHispanic: {
+    whiteAlone: number;
+    blackAlone: number;
+    americanIndianAlone: number;
+    asianAlone: number;
+    pacificIslanderAlone: number;
+    otherRaceAlone: number;
+    twoOrMoreRaces: number;
+    hispanicOrLatino: number;
+  };
+  nativityCitizenship: {
+    foreignBorn: number;
+    naturalizedCitizen: number;
+    notCitizen: number;
+  };
+  education: {
+    lessThanHS: number;
+    hsGraduate: number;
+    someCollege: number;
+    associates: number;
+    bachelors: number;
+    mastersOrHigher: number;
+  };
+  veteranStatus: {
+    totalVeterans: number;
+    employedVeterans: number;
+    veteransWithDisability: number;
+    };
+
+  incomeEmployment: {
+    totalLaborForce: number;
+    medianHouseholdIncome: number;
+    perCapitaIncome: number;
+    percentBelowPoverty: number;
+    percentEmployed: number;
+    percentUnemployed: number;
+    laborForceParticipation: number;
+    };
 };
 
-type CharAgeGroupsData = {
-  ageGroup: string;
-  pop: number;
-  sex: string;
-  race: string;
-  hisp: string;
-  state: string;
-  county: string;
-  dateCode: string;
-};
-
-type responseData = {
-  population: PopulationData[];
-  charAgeGroups: CharAgeGroupsData[];
-};
-
-// Utility functions
 const formatNumber = (num: number): string => {
   return new Intl.NumberFormat().format(num);
 };
-
-const dateCodeToYear = (dateCode: string): string => {
-  const baseYear = 2010;
-  const offset = parseInt(dateCode, 10);
-  return (baseYear + offset - 1).toString();
+const formatCurrency = (num: number): string => {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+  }).format(num);
 };
 
 interface DemographicSectionProps {
@@ -94,15 +125,14 @@ export default function PopulationEstimates({
   stateFips,
   countyFips,
 }: PopulationDashboardProps) {
-  const [populationData, setPopulationData] = useState<PopulationData[]>([]);
-  const [charAgeGroupsData, setCharAgeGroupsData] = useState<
-    CharAgeGroupsData[]
-  >([]);
+  const [demographicData, setDemographicData] =
+    useState<ProcessedAcsData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState(2019);
+  const [selectedYear, setSelectedYear] = useState(2023);
 
-  const availableYears = [2019, 2018];
+  const availableYears = [
+    2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012];
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -119,18 +149,14 @@ export default function PopulationEstimates({
         }),
       });
 
-      const json = (await response.json()) as responseData;
-
       if (!response.ok) {
         throw new Error("Failed to fetch data");
       }
 
-      setPopulationData(json.population || []);
-      setCharAgeGroupsData(json.charAgeGroups || []);
+      const data = (await response.json()) as ProcessedAcsData;
+      setDemographicData(data);
     } catch (err) {
-      console.error("Error fetching population data:", err);
-      setPopulationData([]);
-      setCharAgeGroupsData([]);
+      console.error("Error fetching demographic data:", err);
       setError(err instanceof Error ? err.message : "Failed to fetch data");
     } finally {
       setLoading(false);
@@ -141,239 +167,191 @@ export default function PopulationEstimates({
     void fetchData();
   }, [fetchData]);
 
-  const processCharAgeGroupsData = (data: CharAgeGroupsData[]) => {
-    const overallTotal = populationData[0]?.pop ?? 1;
-    const totalPop = overallTotal;
-
-    const countyData = data.filter(
-      (row) => row.state === stateFips && row.county === countyFips,
-    );
-
-    const totalPopulation = countyData
-      .filter(
-        (row) =>
-          row.ageGroup === "0" && // Under 5 age group
-          row.sex === "0" && // Total population (not male/female-specific)
-          row.race === "0" && // Total population (not race-specific)
-          row.hisp === "0" &&
-          row.county === countyFips &&
-          row.state === stateFips, // Total population (not Hispanic-specific)
-      )
-      .reduce((sum, row) => sum + row.pop, 0);
-
-    console.log("Total Popluaiton Population (Corrected):", totalPopulation);
-
-    // Calculate demographics
-    const under5 =
-      countyData.find(
-        (row) =>
-          row.ageGroup === "4" && // Under 5 age group
-          row.sex === "0" && // Total population (not male/female-specific)
-          row.race === "0" && // Total population (not race-specific)
-          row.hisp === "0" && // Total population (not Hispanic-specific)
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const under18 =
-      countyData.find(
-        (row) =>
-          row.ageGroup === "19" && // Under 18 age group
-          row.sex === "0" && // Total population (not male/female-specific)
-          row.race === "0" && // Total population (not race-specific)
-          row.hisp === "0" && // Total population (not Hispanic-specific)
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const between25_44 =
-      countyData.find(
-        (row) =>
-          row.ageGroup === "24" && // Under 18 age group
-          row.sex === "0" && // Total population (not male/female-specific)
-          row.race === "0" && // Total population (not race-specific)
-          row.hisp === "0" && // Total population (not Hispanic-specific)
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const between45_64 =
-      countyData.find(
-        (row) =>
-          row.ageGroup === "25" && // Under 18 age group
-          row.sex === "0" && // Total population (not male/female-specific)
-          row.race === "0" && // Total population (not race-specific)
-          row.hisp === "0" && // Total population (not Hispanic-specific)
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const over65 =
-      countyData.find(
-        (row) =>
-          row.ageGroup === "26" &&
-          row.sex === "0" &&
-          row.race === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const females =
-      countyData.find(
-        (row) =>
-          row.sex === "2" &&
-          row.ageGroup === "0" &&
-          row.race === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const male =
-      countyData.find(
-        (row) =>
-          row.sex === "1" &&
-          row.ageGroup === "0" &&
-          row.race === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    // Race calculations (raw values)
-    const whiteAlone =
-      countyData.find(
-        (row) =>
-          row.race === "1" &&
-          row.sex === "0" &&
-          row.ageGroup === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const blackAlone =
-      countyData.find(
-        (row) =>
-          row.race === "2" &&
-          row.sex === "0" &&
-          row.ageGroup === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const tworaces =
-      countyData.find(
-        (row) =>
-          row.race === "6" &&
-          row.sex === "0" &&
-          row.ageGroup === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const hispanic =
-      countyData.find(
-        (row) =>
-          row.hisp === "2" &&
-          row.sex === "0" &&
-          row.ageGroup === "0" &&
-          row.race === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const pacific_Hawaiian_native =
-      countyData.find(
-        (row) =>
-          row.race === "5" &&
-          row.sex === "0" &&
-          row.ageGroup === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const asianAlone =
-      countyData.find(
-        (row) =>
-          row.race === "4" &&
-          row.sex === "0" &&
-          row.ageGroup === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
-
-    const americanIndian =
-      countyData.find(
-        (row) =>
-          row.race === "9" &&
-          row.sex === "0" &&
-          row.ageGroup === "0" &&
-          row.hisp === "0" &&
-          row.state === stateFips &&
-          row.county === countyFips,
-      )?.pop ?? 0;
+  const processDataForDisplay = (data: ProcessedAcsData) => {
+    const total = data.totalPopulation;
 
     return {
       population: [
-        { label: "Population estimates base", value: formatNumber(totalPop) }, // still a placeholder
+        {
+          label: "Total Population",
+          value: formatNumber(total),
+        },
       ],
       ageAndSex: [
         {
-          label: "Persons under 5 years:",
-          value: Number(((under5 / totalPop) * 100).toFixed(1)),
+          label: "Persons under 5 years",
+          value:
+            ((data.malePopulation.under5 + data.femalePopulation.under5) /
+              total) *
+            100,
         },
         {
-          label: "Persons under 18 years:",
-          value: Number(((under18 / totalPop) * 100).toFixed(1)),
+          label: "Persons under 18 years",
+          value:
+            ((data.malePopulation.under18 + data.femalePopulation.under18) /
+              total) *
+            100,
         },
         {
-          label: "Persons between 25 and 44 years:",
-          value: Number(((between25_44 / totalPop) * 100).toFixed(1)),
+          label: "Persons 18 to 24 years",
+          value:
+            ((data.malePopulation.age18to24 + data.femalePopulation.age18to24) /
+              total) *
+            100,
         },
         {
-          label: "Persons between 44 and 64 years:",
-          value: Number(((between45_64 / totalPop) * 100).toFixed(1)),
+          label: "Persons 25 to 44 years",
+          value:
+            ((data.malePopulation.age25to44 + data.femalePopulation.age25to44) /
+              total) *
+            100,
         },
         {
-          label: "Persons 65 years and over:",
-          value: Number(((over65 / totalPop) * 100).toFixed(1)),
+          label: "Persons 45 to 64 years",
+          value:
+            ((data.malePopulation.age45to64 + data.femalePopulation.age45to64) /
+              total) *
+            100,
         },
         {
-          label: "Female persons:",
-          value: Number(((females / totalPop) * 100).toFixed(1)),
+          label: "Persons 65 years and over",
+          value:
+            ((data.malePopulation.age65andOver +
+              data.femalePopulation.age65andOver) /
+              total) *
+            100,
         },
         {
-          label: "Male persons:",
-          value: Number(((male / totalPop) * 100).toFixed(1)),
+          label: "Female persons",
+          value: (data.femalePopulation.total / total) * 100,
+        },
+        {
+          label: "Male persons",
+          value: (data.malePopulation.total / total) * 100,
         },
       ],
       raceAndHispanic: [
-        { label: "White alone:", value: (whiteAlone / totalPop) * 100 },
-        { label: "Black alone:", value: (blackAlone / totalPop) * 100 },
         {
-          label: "American Indian and Alaska Native alone:",
-          value: (americanIndian / totalPop) * 100,
-        },
-        { label: "Asian alone:", value: (asianAlone / totalPop) * 100 },
-        {
-          label: "Native Hawaiian and Other Pacific Islander alone:",
-          value: (pacific_Hawaiian_native / totalPop) * 100,
+          label: "White alone",
+          value: (data.raceAndHispanic.whiteAlone / total) * 100,
         },
         {
-          label: "Two or More Races:",
-          value: (tworaces / totalPop) * 100,
+          label: "Black alone",
+          value: (data.raceAndHispanic.blackAlone / total) * 100,
         },
         {
-          label: "Hispanic or Latino:",
-          value: (hispanic / totalPop) * 100,
+          label: "American Indian and Alaska Native alone",
+          value: (data.raceAndHispanic.americanIndianAlone / total) * 100,
+        },
+        {
+          label: "Asian alone",
+          value: (data.raceAndHispanic.asianAlone / total) * 100,
+        },
+        {
+          label: "Native Hawaiian and Other Pacific Islander alone",
+          value: (data.raceAndHispanic.pacificIslanderAlone / total) * 100,
+        },
+        {
+          label: "Two or More Races",
+          value: (data.raceAndHispanic.twoOrMoreRaces / total) * 100,
+        },
+        {
+          label: "Hispanic or Latino",
+          value: (data.raceAndHispanic.hispanicOrLatino / total) * 100,
         },
       ],
+      VeteranStatus: [
+        {
+          label: "Total Veterans",
+          value: (data.veteranStatus.totalVeterans / total) * 100,
+        },
+        {
+          label: "Employed Veterans",
+          value: (data.veteranStatus.employedVeterans / total) * 100,
+        },
+        {
+          label: "Veterans with Disability",
+          value: (data.veteranStatus.veteransWithDisability / total) * 100,
+        },
+      ],
+      Citizenship: [
+        {
+          label: "Foreign Born",
+          value: (data.nativityCitizenship.foreignBorn / total) * 100,
+        },
+        {
+          label: "Naturalized Citizen",
+          value: (data.nativityCitizenship.naturalizedCitizen / total) * 100,
+        },
+        {
+          label: "Not a Citizen",
+          value: (data.nativityCitizenship.notCitizen / total) * 100,
+        }
+      ],
+      Education:[
+        {
+          label: "Less than High School",
+          value: (data.education.lessThanHS / total) * 100,
+        },
+        {
+          label: "High School Graduate",
+          value: (data.education.hsGraduate / total) * 100,
+        },
+        {
+          label: "Some College",
+          value: (data.education.someCollege / total) * 100,
+        },
+        {
+          label: "Associates Degree",
+          value: (data.education.associates / total) * 100,
+        },
+        {
+          label: "Bachelors Degree",
+          value: (data.education.bachelors / total) * 100,
+        },
+        {
+          label: "Masters or Higher",
+          value: (data.education.mastersOrHigher / total) * 100,
+        }
+      ],
+      income: [
+              {
+                label: "Median Household Income",
+                value: formatCurrency(data.incomeEmployment.medianHouseholdIncome),
+                format: "currency",
+              },
+              {
+                label: "Per Capita Income",
+                value: formatCurrency(data.incomeEmployment.perCapitaIncome),
+                format: "currency",
+              },
+              {
+                label: "Persons Below Poverty Line",
+                value: (data.incomeEmployment.percentBelowPoverty / total ) * 100,
+                format: "percent",
+              },
+            ],
+            employment: [
+              {
+                label: "Employment Rate",
+                value: `${data.incomeEmployment.percentEmployed.toFixed(1)}%`,  // ✅ Fixed formatting
+              },
+              {
+                label: "Total Work Force",
+                value: data.incomeEmployment.totalLaborForce > 0
+                  ? formatNumber(data.incomeEmployment.totalLaborForce)
+                  : "N/A",  // ✅ Handles cases where data is missing
+              },
+              {
+                label: "Unemployment Rate",
+                value: `${data.incomeEmployment.percentUnemployed.toFixed(1)}%`,  // ✅ Fixed formatting
+              },
+              {
+                label: "Labor Force Participation",
+                value: `${data.incomeEmployment.laborForceParticipation.toFixed(1)}%`,  // ✅ Fixed formatting
+              },
+            ],
+
     };
   };
 
@@ -384,7 +362,7 @@ export default function PopulationEstimates({
           <CardTitle className="flex items-center gap-2">
             Population Estimates for {county}, {state}
             <div className="text-sm font-normal text-gray-500">
-              (Data available for 2018-2019)
+              (Data from ACS 5-Year Estimates)
             </div>
           </CardTitle>
         </CardHeader>
@@ -392,7 +370,7 @@ export default function PopulationEstimates({
           <div className="mb-4 flex flex-wrap items-center gap-4">
             <div className="flex-1">
               <label className="mb-2 block font-medium text-gray-700">
-                Select Estimate Year:
+                Select Year:
               </label>
               <select
                 value={selectedYear}
@@ -427,75 +405,53 @@ export default function PopulationEstimates({
             </div>
           )}
 
-          {populationData.length > 0 && (
-            <div className="h-100 mb-6">
-              <ResponsiveContainer width="100%" height={400}>
-                <LineChart
-                  data={populationData.map((row) => ({
-                    ...row,
-                    year: dateCodeToYear(row.dateCode),
-                  }))}
-                  margin={{ top: 20, right: 40, left: 20, bottom: 40 }}
-                >
-                  <CartesianGrid strokeDasharray="4 4" stroke="#ddd" />
-                  <XAxis
-                    dataKey="year"
-                    label={{
-                      value: "Year",
-                      position: "insideBottom",
-                      dy: 10,
-                      style: {
-                        fontSize: "14px",
-                        fontWeight: "bold",
-                        fill: "#666",
-                      },
-                    }}
-                  />
-                  <YAxis
-                    label={{
-                      value: "Population",
-                      angle: -90,
-                      position: "insideLeft",
-                      dx: -20,
-                      style: {
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                        fill: "#666",
-                      },
-                    }}
-                  />
-                  <Tooltip />
-                  <Line
-                    type="monotone"
-                    dataKey="pop"
-                    stroke="#2563eb"
-                    strokeWidth={3}
-                    dot={{ fill: "#2563eb" }}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Demographics Sections */}
-          {charAgeGroupsData.length > 0 && (
+          {/* ✅ Fixed conditional rendering structure */}
+          {demographicData && (
             <div className="grid gap-8 md:grid-cols-2">
               <div className="space-y-8">
                 <DemographicSection
                   title="Population"
-                  rows={processCharAgeGroupsData(charAgeGroupsData).population}
+                  rows={processDataForDisplay(demographicData).population}
                 />
                 <DemographicSection
                   title="Age and Sex"
-                  rows={processCharAgeGroupsData(charAgeGroupsData).ageAndSex}
+                  rows={processDataForDisplay(demographicData).ageAndSex}
                 />
               </div>
               <div>
                 <DemographicSection
                   title="Race and Hispanic Origin"
-                  rows={
-                    processCharAgeGroupsData(charAgeGroupsData).raceAndHispanic
-                  }
+                  rows={processDataForDisplay(demographicData).raceAndHispanic}
+                />
+              </div>
+              <div>
+                <DemographicSection
+                  title="Income"
+                  rows={processDataForDisplay(demographicData).income}
+                />
+              </div>
+              <div>
+                <DemographicSection
+                  title="Employment"
+                  rows={processDataForDisplay(demographicData).employment}
+                  />
+              </div>
+              <div>
+                <DemographicSection
+                  title="Veteran Status"
+                  rows={processDataForDisplay(demographicData).VeteranStatus}
+                />
+              </div>
+              <div>
+                <DemographicSection
+                  title="Citizenship"
+                  rows={processDataForDisplay(demographicData).Citizenship}
+                />
+              </div>
+              <div className="md:col-span-2">
+                <DemographicSection
+                  title="Education"
+                  rows={processDataForDisplay(demographicData).Education}
                 />
               </div>
             </div>
@@ -504,4 +460,3 @@ export default function PopulationEstimates({
       </Card>
     </div>
   );
-}

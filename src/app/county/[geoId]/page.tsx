@@ -77,7 +77,7 @@ export default async function Page({
           <p className="text-gray-600">Unemployment Rate: TBD</p>
         </div>
       </section>
-
+      {/*
       <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <h2 className="text-xl font-semibold text-gray-700">
           Unemployment Data
@@ -99,25 +99,25 @@ export default async function Page({
             countyFips={countyFips}
           />
         </div>
-      </section>
+      </section> */}
 
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+      {/* <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <CensusDataFetcher
           state={state}
           county={county}
           stateFips={stateFips}
           countyFips={countyFips}
         />
-      </section>
+      </section> */}
 
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+      {/* <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <BLSDataFetcher
           _state={state}
           _county={county}
           stateFips={stateFips}
           countyFips={countyFips}
         />
-      </section>
+      </section> */}
       {
         // <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         //   <FRED state={state} county={county} />
