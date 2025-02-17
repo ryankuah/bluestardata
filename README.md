@@ -1,29 +1,55 @@
-# Create T3 App
+# Census ACS Variables
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+## Population
 
-## What's next? How do I make an app with this?
+- `K200101_001E`: Total
+- `K200101_002E`: Male
+- `K200101_003E`: Female
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+## Age
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+- `K200103_001E`: Median Age
+- `K200103_002E`: Median Age Male
+- `K200103_003E`: Median Age Female
+- `K200104_002E`: Under 18
+- `K200104_003E`: 18-24
+- `K200104_004E`: 25-34
+- `K200104_005E`: 35-44
+- `K200104_006E`: 45-54
+- `K200104_007E`: 55-64
+- `K200104_008E`: 65+
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+## Race
 
-## Learn More
+- `K200201_002E`: White
+- `K200201_003E`: Black or African American
+- `K200201_004E`: American Indian or Alaska Native
+- `K200201_005E`: Asian
+- `K200201_006E`: Native Hawaiian or Other Pacific Islander
+- `K200201_007E`: Other
+- `K200201_008E`: Two or More Races
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+## Hispanic or Latino
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+- `K200301_002E`: Not Hispanic or Latino
+- `K200301_003E`: Hispanic or Latino
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+## Citizenship
 
-## How do I deploy this?
+- `K200501_002E`: U.S. Citizen
+- `K200501_003E`: Non-U.S. Citizen
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+## Birth
+
+- `K200503_002E`: Born in U.S.
+- `K200503_003E`: Born in State
+- `K200503_004E`: Born in Different State
+- `K200503_006E`: Born in Foreign Country
+
+## Mobility
+
+- `K200701_002E`: Haven't moved within past year
+- `K200701_003E`: Moved within same county
+- `K200701_004E`: Moved withing same state
+- `K200701_005E`: Moved from different state
+- `K200701_006E`: Moved from abroad

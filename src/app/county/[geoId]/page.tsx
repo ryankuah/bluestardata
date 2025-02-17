@@ -7,26 +7,23 @@ import { type Feature } from "geojson";
 import Unemployment from "./unemployment";
 import Labour from "./employment";
 import BLSDataFetcher from "@/components/bls/BLSDataFetcher";
-import PopulationEstimates from "@/components/population_estimates/population_estimates";
-import { type County } from "@/utils/map/types";
 import CensusDataFetcher from "@/components/census/CensusDataFetcher";
+import Population from "@/components/census/Population";
+import type { CountyData } from "@/utils/db/types";
 
 export default async function Page({
   params,
 }: {
   params: Promise<{ geoId: string }>;
 }) {
-  type dbObj = County & {
-    state: {
-      name: string;
-    };
-  };
-
   const geoId = (await params).geoId;
   const dbObj = await db.query.counties.findFirst({
     where: eq(counties.geoId, geoId),
     with: {
-      state: true,
+      data: true,
+      state: {
+        with: { data: true },
+      },
     },
   });
 
@@ -40,6 +37,8 @@ export default async function Page({
 
   if (!state || !stateFips || !county || !countyFips)
     throw new Error("Invalid state");
+
+  const countyData = dbObj?.data as CountyData[];
 
   return (
     <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
@@ -57,8 +56,22 @@ export default async function Page({
           <h2 className="text-xl font-semibold text-gray-700">
             Basic Statistics
           </h2>
-          <p className="text-gray-600">Population: TBD</p>
-          <p className="text-gray-600">Median Age: TBD</p>
+          <p className="text-gray-600">
+            Population:{" "}
+            {
+              countyData
+                .find((data) => data.name === "Population")
+                ?.dataSet.at(-1)?.data.total
+            }
+          </p>
+          <p className="text-gray-600">
+            Median Age:{" "}
+            {
+              countyData
+                .find((data) => data.name === "Median Age")
+                ?.dataSet.at(-1)?.data.combined
+            }
+          </p>
           <p className="text-gray-600">Median Income: TBD</p>
           <p className="text-gray-600">Poverty Rate: TBD</p>
           <p className="text-gray-600">Unemployment Rate: TBD</p>
@@ -110,12 +123,15 @@ export default async function Page({
         //   <FRED state={state} county={county} />
         // </section>
       }
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <PopulationEstimates
+      <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <Population
           state={state}
           county={county}
-          stateFips={stateFips}
-          countyFips={countyFips}
+          countyData={
+            countyData.filter(
+              (item) => item.source === "ACSSE",
+            ) as unknown as CountyData[]
+          }
         />
       </section>
     </div>

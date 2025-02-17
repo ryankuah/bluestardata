@@ -1,6 +1,5 @@
 "use client";
-
-import React from "react";
+import { useState } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -9,48 +8,26 @@ import {
   flexRender,
 } from "@tanstack/react-table";
 
-import { type CensusRow } from "./CensusDataFetcher";
+import { type Header } from "./types";
 
-export default function CensusCBP({
+export default function Table<T extends object>({
   data,
-  state,
+  headers,
   county,
+  state,
+  name,
 }: {
-  data: CensusRow[];
-  state: string;
+  data: T[];
+  headers: Header[];
   county: string;
+  state: string;
+  name: string;
 }) {
-  const columns = React.useMemo(
-    () => [
-      {
-        header: "Industry Code",
-        accessorKey: "industryCode",
-      },
-      {
-        header: "Industry Name",
-        accessorKey: "industryName",
-      },
-      {
-        header: "Establishments",
-        accessorKey: "establishments",
-      },
-      {
-        header: "Employees",
-        accessorKey: "employees",
-      },
-      {
-        header: "Annual Payroll",
-        accessorKey: "annualPayroll",
-      },
-    ],
-    [],
-  );
-
-  const [filter, setFilter] = React.useState("");
+  const [filter, setFilter] = useState("");
 
   const table = useReactTable({
     data,
-    columns,
+    columns: headers,
     state: {
       globalFilter: filter,
     },
@@ -63,7 +40,7 @@ export default function CensusCBP({
   return (
     <div>
       <h1 className="sticky top-0 z-10 mb-4 w-full bg-white text-xl font-bold text-gray-800">
-        2022 CBP for {county}, {state}
+        {name} for {county}, {state}
       </h1>
       <div className="w-full overflow-y-auto" style={{ maxHeight: "600px" }}>
         {data.length === 0 ? (

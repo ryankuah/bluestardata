@@ -1,5 +1,3 @@
-import { db } from "@/server/db";
-import { stateDatas, countyDatas } from "@/server/db/schema";
 import { addCountyData, addStateData } from "@/utils/db/utils";
 import { env } from "@/env";
 import {
@@ -62,7 +60,7 @@ export async function addFredIds() {
   const fredIDs = await fetchCategories(27281);
   for (const id of fredIDs) {
     const state = await getStatebyName(id.name);
-    await addStateData(state, "FRED", "Fred ID", id.id);
+    await addStateData(state, "Reference Code", "FRED", "Fred ID", id.id);
     const stateFreds = await fetchCategories(id.id);
     const countyID = stateFreds.find(
       (selection) =>
@@ -73,7 +71,13 @@ export async function addFredIds() {
     const counties = await fetchCategories(countyID);
     for (const county of counties) {
       const countyId = await getCountyGeoId(county.name, id.name);
-      await addCountyData(countyId, "FRED", "Fred ID", county.id);
+      await addCountyData(
+        countyId,
+        "Refernce Code",
+        "FRED",
+        "Fred ID",
+        county.id,
+      );
     }
   }
 }

@@ -49,7 +49,8 @@ export const stateDatas = pgTable("state_data", {
     .references(() => states.fipsCode),
   category: varchar("category", { length: 255 }),
   name: varchar("name", { length: 255 }).notNull(),
-  data: jsonb("data").notNull(),
+  source: varchar("source", { length: 255 }),
+  dataSet: jsonb("data_set").notNull(),
 });
 
 export const stateDatasRelation = relations(stateDatas, ({ one }) => ({
@@ -65,8 +66,9 @@ export const countyDatas = pgTable("county_data", {
     .notNull()
     .references(() => counties.geoId),
   category: varchar("category", { length: 255 }),
+  source: varchar("source", { length: 255 }),
   name: varchar("name", { length: 255 }).notNull(),
-  data: jsonb("data").notNull(),
+  dataSet: jsonb("data_set").notNull(),
 });
 
 export const countyDataRelations = relations(countyDatas, ({ one }) => ({
