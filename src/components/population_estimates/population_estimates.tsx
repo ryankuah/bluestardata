@@ -1,17 +1,7 @@
 "use client";
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { AlertCircle } from "lucide-react";
-import { format } from "node:path/win32";
 
 interface PopulationDashboardProps {
   state: string;
@@ -68,7 +58,7 @@ type ProcessedAcsData = {
     totalVeterans: number;
     employedVeterans: number;
     veteransWithDisability: number;
-    };
+  };
 
   incomeEmployment: {
     totalLaborForce: number;
@@ -78,7 +68,7 @@ type ProcessedAcsData = {
     percentEmployed: number;
     percentUnemployed: number;
     laborForceParticipation: number;
-    };
+  };
 };
 
 const formatNumber = (num: number): string => {
@@ -132,7 +122,8 @@ export default function PopulationEstimates({
   const [selectedYear, setSelectedYear] = useState(2023);
 
   const availableYears = [
-    2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012];
+    2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012,
+  ];
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -286,9 +277,9 @@ export default function PopulationEstimates({
         {
           label: "Not a Citizen",
           value: (data.nativityCitizenship.notCitizen / total) * 100,
-        }
+        },
       ],
-      Education:[
+      Education: [
         {
           label: "Less than High School",
           value: (data.education.lessThanHS / total) * 100,
@@ -312,46 +303,46 @@ export default function PopulationEstimates({
         {
           label: "Masters or Higher",
           value: (data.education.mastersOrHigher / total) * 100,
-        }
+        },
       ],
       income: [
-              {
-                label: "Median Household Income",
-                value: formatCurrency(data.incomeEmployment.medianHouseholdIncome),
-                format: "currency",
-              },
-              {
-                label: "Per Capita Income",
-                value: formatCurrency(data.incomeEmployment.perCapitaIncome),
-                format: "currency",
-              },
-              {
-                label: "Persons Below Poverty Line",
-                value: (data.incomeEmployment.percentBelowPoverty / total ) * 100,
-                format: "percent",
-              },
-            ],
-            employment: [
-              {
-                label: "Employment Rate",
-                value: `${data.incomeEmployment.percentEmployed.toFixed(1)}%`,  // ✅ Fixed formatting
-              },
-              {
-                label: "Total Work Force",
-                value: data.incomeEmployment.totalLaborForce > 0
-                  ? formatNumber(data.incomeEmployment.totalLaborForce)
-                  : "N/A",  // ✅ Handles cases where data is missing
-              },
-              {
-                label: "Unemployment Rate",
-                value: `${data.incomeEmployment.percentUnemployed.toFixed(1)}%`,  // ✅ Fixed formatting
-              },
-              {
-                label: "Labor Force Participation",
-                value: `${data.incomeEmployment.laborForceParticipation.toFixed(1)}%`,  // ✅ Fixed formatting
-              },
-            ],
-
+        {
+          label: "Median Household Income",
+          value: formatCurrency(data.incomeEmployment.medianHouseholdIncome),
+          format: "currency",
+        },
+        {
+          label: "Per Capita Income",
+          value: formatCurrency(data.incomeEmployment.perCapitaIncome),
+          format: "currency",
+        },
+        {
+          label: "Persons Below Poverty Line",
+          value: (data.incomeEmployment.percentBelowPoverty / total) * 100,
+          format: "percent",
+        },
+      ],
+      employment: [
+        {
+          label: "Employment Rate",
+          value: `${data.incomeEmployment.percentEmployed.toFixed(1)}%`, // ✅ Fixed formatting
+        },
+        {
+          label: "Total Work Force",
+          value:
+            data.incomeEmployment.totalLaborForce > 0
+              ? formatNumber(data.incomeEmployment.totalLaborForce)
+              : "N/A", // ✅ Handles cases where data is missing
+        },
+        {
+          label: "Unemployment Rate",
+          value: `${data.incomeEmployment.percentUnemployed.toFixed(1)}%`, // ✅ Fixed formatting
+        },
+        {
+          label: "Labor Force Participation",
+          value: `${data.incomeEmployment.laborForceParticipation.toFixed(1)}%`, // ✅ Fixed formatting
+        },
+      ],
     };
   };
 
@@ -434,7 +425,7 @@ export default function PopulationEstimates({
                 <DemographicSection
                   title="Employment"
                   rows={processDataForDisplay(demographicData).employment}
-                  />
+                />
               </div>
               <div>
                 <DemographicSection
@@ -460,3 +451,4 @@ export default function PopulationEstimates({
       </Card>
     </div>
   );
+}

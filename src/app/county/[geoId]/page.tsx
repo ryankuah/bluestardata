@@ -73,7 +73,7 @@ export default async function Page({
             }
           </p>
           <p className="text-gray-600">Median Income: TBD</p>
-          <p className="text-gray-600">Poverty Rate: TBD</p>
+          <p className="text-gray-600">Population Growth Rate</p>
           <p className="text-gray-600">Unemployment Rate: TBD</p>
         </div>
       </section>
