@@ -10,6 +10,7 @@ import BLSDataFetcher from "@/components/bls/BLSDataFetcher";
 import CensusDataFetcher from "@/components/census/CensusDataFetcher";
 import Population from "@/components/census/Population";
 import type { CountyData } from "@/utils/db/types";
+import PopulationEstimates from "@/components/population_estimates/population_estimates";
 
 export default async function Page({
   params,
@@ -123,6 +124,14 @@ export default async function Page({
         //   <FRED state={state} county={county} />
         // </section>
       }
+      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <PopulationEstimates
+          state={state}
+          county={county}
+          stateFips={stateFips}
+          countyFips={countyFips}
+        />
+      </section>
       <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <Population
           state={state}
