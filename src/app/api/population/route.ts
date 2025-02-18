@@ -157,7 +157,7 @@ async function fetchGroupData(params: AcsApiUrlParams): Promise<string[][]> {
     );
   }
 
-  return response.json();
+  return response.json() as Promise<string[][]>;
 }
 
 type ProcessedAcsData = {
@@ -210,7 +210,7 @@ type ProcessedAcsData = {
     mastersOrHigher: number;
   };
   incomeEmployment: {
-    laborForce: number;
+    totalLaborForce: number;
     medianHouseholdIncome: number;
     perCapitaIncome: number;
     percentBelowPoverty: number;
@@ -375,7 +375,7 @@ function processAcsData(dataGroups: string[][][]): ProcessedAcsData {
   };
 
   return {
-    name: dataMap.get("NAME") || "Unknown",
+    name: dataMap.get("NAME") ?? "Unknown",
     totalPopulation: getValue(VARIABLES.GROUP1.TOTAL_POP),
     malePopulation: {
       under5: maleUnder5,
