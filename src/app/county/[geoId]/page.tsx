@@ -8,9 +8,40 @@ import Unemployment from "./unemployment";
 import Labour from "./employment";
 import BLSDataFetcher from "@/components/bls/BLSDataFetcher";
 import CensusDataFetcher from "@/components/census/CensusDataFetcher";
-import Population from "@/components/census/Population";
-import type { CountyData } from "@/utils/db/types";
+import ACSSE from "@/components/census/ACSSE";
+import type { CountyData, DataSet } from "@/utils/db/types";
 import PopulationEstimates from "@/components/population_estimates/population_estimates";
+
+import type { CountyPageData } from "@/utils/types";
+
+const convertToObject = (data: CountyData[]) => {
+  const out: Record<string, Record<string, Record<string, DataSet[]>>> = {};
+  data.forEach((item) => {
+    if (!item) {
+      return;
+    }
+
+    const source = item.source;
+    const category = item.category;
+    const name = item.name;
+
+    if (!category || !name || !source) {
+      return;
+    }
+    if (!out[source]) {
+      out[source] = {};
+    }
+    if (!out[source][category]) {
+      out[source][category] = {};
+    }
+    if (!out[source][category][name]) {
+      out[source][category][name] = [];
+    }
+    out[source][category][name] = item.dataSet;
+  });
+
+  return out;
+};
 
 export default async function Page({
   params,
@@ -41,6 +72,20 @@ export default async function Page({
 
   const countyData = dbObj?.data as CountyData[];
 
+  const allData: CountyPageData = {
+    county: {
+      name: county,
+      fipsCode: countyFips,
+      geoId: geoId,
+    },
+    state: {
+      name: state,
+      fipsCode: stateFips,
+    },
+    data: convertToObject(countyData),
+  };
+  console.log("HERE", allData);
+
   return (
     <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
       <header className="text-center">
@@ -59,20 +104,11 @@ export default async function Page({
           </h2>
           <p className="text-gray-600">
             Population:{" "}
-            {
-              countyData
-                .find((data) => data.name === "Population")
-                ?.dataSet.at(-1)?.data.total
-            }
+            {allData.data
+              .acsse!.demographics!.population!.at(-1)!
+              .data.total!.toLocaleString()}
           </p>
-          <p className="text-gray-600">
-            Median Age:{" "}
-            {
-              countyData
-                .find((data) => data.name === "Median Age")
-                ?.dataSet.at(-1)?.data.combined
-            }
-          </p>
+          <p className="text-gray-600">Median Age: {}</p>
           <p className="text-gray-600">Median Income: TBD</p>
           <p className="text-gray-600">Population Growth Rate</p>
           <p className="text-gray-600">Unemployment Rate: TBD</p>
@@ -133,15 +169,7 @@ export default async function Page({
         />
       </section>
       <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <Population
-          state={state}
-          county={county}
-          countyData={
-            countyData.filter(
-              (item) => item.source === "ACSSE",
-            ) as unknown as CountyData[]
-          }
-        />
+        <ACSSE allData={allData} />
       </section>
     </div>
   );
