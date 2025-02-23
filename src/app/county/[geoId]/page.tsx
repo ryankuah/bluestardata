@@ -105,8 +105,8 @@ export default async function Page({
           <p className="text-gray-600">
             Population:{" "}
             {allData.data
-              .acsse!.demographics!.population!.at(-1)!
-              .data.total!.toLocaleString()}
+              .acsse!.demographics?.population?.at(-1)
+              ?.data.total?.toLocaleString() ?? "NO DATA"}
           </p>
           <p className="text-gray-600">Median Age: {}</p>
           <p className="text-gray-600">Median Income: TBD</p>

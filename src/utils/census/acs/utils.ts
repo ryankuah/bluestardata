@@ -1,6 +1,8 @@
 import { env } from "@/env";
 import { addCountyData } from "@/utils/db/utils";
 import type { DataSet } from "@/utils/db/types";
+import { db } from "@/server/db";
+import { counties } from "@/server/db/schema";
 
 const ACS_VARIABLES = [
   "K200101_001E",
@@ -36,10 +38,20 @@ const ACS_VARIABLES = [
   "K200701_004E",
   "K200701_005E",
   "K200701_006E",
-  "K200701_006E",
+  "K200801_002E",
+  "K200801_003E",
+  "K200801_004E",
+  "K200801_005E",
+  "K200801_006E",
+  "K200802_002E",
+  "K200802_003E",
+  "K200802_004E",
+  "K200802_005E",
 ];
 
 export async function fetchACS(stateFips: string, countyFips: string) {
+  console.log("Fetching ACS for", stateFips, countyFips);
+
   if (!stateFips || !countyFips) {
     throw new Error("Missing required parameters: stateFips or countyFips");
   }
@@ -51,6 +63,8 @@ export async function fetchACS(stateFips: string, countyFips: string) {
   const citizenship: DataSet[] = [];
   const birth: DataSet[] = [];
   const mobility: DataSet[] = [];
+  const transportation: DataSet[] = [];
+  const travelTime: DataSet[] = [];
 
   for (let year = 2014; year <= 2023; year++) {
     if (year === 2020) continue;
@@ -61,12 +75,12 @@ export async function fetchACS(stateFips: string, countyFips: string) {
     //   `https://api.census.gov/data/${year}/acs/acsse?get=${ACS_VARIABLES.join(",")}&for=county:${countyFips}&in=state:${stateFips}&key=${env.CENSUS_API_KEY}`,
     // );
 
-    if (!response.ok) {
-      // console.log(response);
-      throw new Error("Failed to fetch data from Census API");
+    if (response.status === 204) {
+      console.log("No data for", year, countyFips, stateFips);
+      continue;
     }
     const json = ((await response.json()) as unknown as string[][]).slice(1);
-    if (!json[0]?.[32]) {
+    if (!json[0]?.[41]) {
       throw new Error("Fetch ACS Error");
     }
     population.push({
@@ -150,6 +164,27 @@ export async function fetchACS(stateFips: string, countyFips: string) {
       },
       units: "",
     });
+    transportation.push({
+      name: year.toString(),
+      data: {
+        droveAlone: Number(json[0][33]),
+        carpooled: Number(json[0][34]),
+        publicTransportation: Number(json[0][35]),
+        workFromHome: Number(json[0][37]),
+        other: Number(json[0][36]),
+      },
+      units: "",
+    });
+    travelTime.push({
+      name: year.toString(),
+      data: {
+        under_10: Number(json[0][38]),
+        _10_to_29: Number(json[0][39]),
+        _30_to_59: Number(json[0][40]),
+        over_60: Number(json[0][41]),
+      },
+      units: "minutes",
+    });
   }
   const stateCode = String(stateFips).padStart(2, "0");
   const countyCode = String(countyFips).padStart(3, "0");
@@ -189,9 +224,29 @@ export async function fetchACS(stateFips: string, countyFips: string) {
       ),
       addCountyData(fullFips, "birth", "birthPlace", "acsse", birth),
       addCountyData(fullFips, "mobility", "yearlyMobility", "acsse", mobility),
+      addCountyData(
+        fullFips,
+        "work",
+        "transportation",
+        "acsse",
+        transportation,
+      ),
+      addCountyData(fullFips, "work", "travelTime", "acsse", travelTime),
     ]);
+    console.log("Done adding ACS for", fullFips);
   } catch (error) {
     console.error("Error adding county data:", error);
     throw error;
+  }
+}
+
+export async function addAllACSData() {
+  const allFips = await db.query.counties.findMany({
+    columns: {
+      geoId: true,
+    },
+  });
+  for (const item of allFips.filter((item) => !item.geoId.startsWith("72"))) {
+    await fetchACS(item.geoId.substring(0, 2), item.geoId.substring(2, 6));
   }
 }

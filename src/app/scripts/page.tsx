@@ -1,6 +1,7 @@
 import { addStateData, addCountyData } from "@/app/scripts/scripts";
 import { addFredIds } from "@/utils/fred/utils";
-import { fetchACS } from "@/utils/census/acs/utils";
+import { addAllACSData, fetchACS } from "@/utils/census/acs/utils";
+
 export default async function Page() {
   async function handleStateData() {
     "use server";
@@ -17,9 +18,13 @@ export default async function Page() {
     await addFredIds();
   }
 
-  async function testing() {
+  async function handleACSData() {
     "use server";
-    await fetchACS("01", "003");
+    await addAllACSData();
+  }
+  async function handleACSTest() {
+    "use server";
+    await fetchACS("20", "087");
   }
 
   return (
@@ -33,7 +38,10 @@ export default async function Page() {
       <form action={handleFredIds}>
         <button type="submit">Add Fred Ids</button>
       </form>
-      <form action={testing}>
+      <form action={handleACSData}>
+        <button type="submit">Add All ACS Data</button>
+      </form>
+      <form action={handleACSTest}>
         <button type="submit">Test</button>
       </form>
     </div>

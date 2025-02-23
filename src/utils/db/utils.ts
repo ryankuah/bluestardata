@@ -11,16 +11,22 @@ export async function addCountyData(
   dataSet: DataSet[] | string | number,
 ) {
   //Check if data already exists
-  const id = (
-    await db.query.countyDatas.findFirst({
-      where: (countyDatas, { eq }) =>
-        eq(countyDatas.countyId, geoId) &&
-        eq(countyDatas.name, name) &&
-        eq(countyDatas.category, category),
+  const row = await db.query.countyDatas
+    .findFirst({
+      where: (countyDatas, { eq, and }) =>
+        and(
+          eq(countyDatas.countyId, geoId),
+          eq(countyDatas.name, name),
+          eq(countyDatas.category, category),
+        ),
     })
-  )?.id;
+    .execute();
+  console.log("id", row);
+  const id = row?.id;
+  console.log(row?.countyId === geoId);
   //Update
   if (id) {
+    console.log("Updating county data", id);
     await db
       .update(countyDatas)
       .set({
@@ -29,6 +35,7 @@ export async function addCountyData(
       .where(eq(countyDatas.id, id));
   } else {
     //Insert
+    console.log("Inserting county data", id);
     await db
       .insert(countyDatas)
       .values({

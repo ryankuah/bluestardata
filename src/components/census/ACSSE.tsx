@@ -9,9 +9,10 @@ export default function ACSSE({ allData }: { allData: CountyPageData }) {
   const [selectedYear, setSelectedYear] = useState(2023);
   const acsseData = allData.data.acsse;
   if (!acsseData) return <p> NO DATA </p>;
-  const availableYears = [
-    2023, 2022, 2021, 2019, 2018, 2017, 2016, 2015, 2014, 2013, 2012,
-  ];
+  if (!allData.data.acsse?.demographics?.population?.[0]?.data) {
+    return <p> NO DATA </p>;
+  }
+  const availableYears = [2023, 2022, 2021, 2019, 2018, 2017, 2016, 2015, 2014];
   return (
     <div className="mx-auto flex h-full w-full max-w-6xl flex-col items-start space-y-4">
       <h1 className="mb-4 text-xl font-semibold">
@@ -40,46 +41,56 @@ export default function ACSSE({ allData }: { allData: CountyPageData }) {
           <DemographicSection
             dataSet={acsseData.demographics!.population!}
             title="Population"
-            index={selectedYear - 2015}
+            index={selectedYear - 2014}
           />
           <DemographicSection
             dataSet={acsseData.age!.medianAge!}
             title="Median Age"
-            index={selectedYear - 2015}
+            index={selectedYear - 2014}
           />
           <DemographicSection
             dataSet={acsseData.ethnicity!.hispanic!}
             title="Hispanic or Latino"
-            index={selectedYear - 2015}
+            index={selectedYear - 2014}
           />
           <DemographicSection
             dataSet={acsseData.mobility!.yearlyMobility!}
             title="Moved in the Past Year"
-            index={selectedYear - 2015}
+            index={selectedYear - 2014}
           />
         </div>
         <div className="flex w-1/3 flex-col">
           <DemographicSection
             dataSet={acsseData.age!.totalAge!}
             title="Age by Age Bracket"
-            index={selectedYear - 2015}
+            index={selectedYear - 2014}
           />
           <DemographicSection
             dataSet={acsseData.nationality!.citizenship!}
             title="US Citizenship Status"
-            index={selectedYear - 2015}
+            index={selectedYear - 2014}
+          />
+          <DemographicSection
+            dataSet={acsseData.work!.transportation!}
+            title="Transportation to Work"
+            index={selectedYear - 2014}
           />
         </div>
         <div className="flex w-1/3 flex-col">
           <DemographicSection
             dataSet={acsseData.ethnicity!.race!}
             title="Race"
-            index={selectedYear - 2015}
+            index={selectedYear - 2014}
           />
           <DemographicSection
             dataSet={acsseData.birth!.birthPlace!}
             title="Birthplace"
-            index={selectedYear - 2015}
+            index={selectedYear - 2014}
+          />
+          <DemographicSection
+            dataSet={acsseData.work!.travelTime!}
+            title="Travel Time to Work"
+            index={selectedYear - 2014}
           />
         </div>
       </div>
@@ -96,23 +107,31 @@ function DemographicSection({
   title?: string;
   index?: number;
 }) {
+  let indexProcess = index;
+  if (index > 6) {
+    indexProcess = index - 1;
+  }
+
   const [stateData, setDataset] = useState<{
     name: string;
     data: { label: string; value: string | number }[];
   }>({ name: "OHNO", data: [{ label: "ERROR", value: "OHNO" }] });
   useEffect(() => {
-    if (!dataSet?.[index]) {
+    if (!dataSet?.[indexProcess]) {
       throw new Error("No Data");
     }
-    const data = Object.entries(dataSet[index].data).map(([key, value]) => {
-      const stringValue = typeof value === "number" ? value.toString() : value;
-      return { label: convertKey(key), value: stringValue };
-    });
+    const data = Object.entries(dataSet[indexProcess]!.data).map(
+      ([key, value]) => {
+        const stringValue =
+          typeof value === "number" ? value.toString() : value;
+        return { label: convertKey(key), value: stringValue };
+      },
+    );
     setDataset({
-      name: dataSet[index].name,
+      name: dataSet[indexProcess]!.name,
       data,
     });
-  }, [dataSet, index]);
+  }, [dataSet, indexProcess]);
 
   if (!stateData) {
     return <p> NO DATA </p>;
