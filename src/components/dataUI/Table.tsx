@@ -1,12 +1,8 @@
 "use client";
 import { useState } from "react";
-import {
-  useReactTable,
-  getCoreRowModel,
-  getFilteredRowModel,
-  getSortedRowModel,
-  flexRender,
-} from "@tanstack/react-table";
+import { AgGridReact } from "ag-grid-react"; // Import AgGridReact
+import "ag-grid-community/styles/ag-grid.css"; // Core CSS for AG Grid
+import "ag-grid-community/styles/ag-theme-alpine.css"; // Theme for AG Grid
 
 import { type Header } from "./types";
 
@@ -25,17 +21,18 @@ export default function Table<T extends object>({
 }) {
   const [filter, setFilter] = useState("");
 
-  const table = useReactTable({
-    data,
-    columns: headers,
-    state: {
-      globalFilter: filter,
-    },
-    getCoreRowModel: getCoreRowModel(),
-    getFilteredRowModel: getFilteredRowModel(),
-    getSortedRowModel: getSortedRowModel(),
-    onGlobalFilterChange: setFilter,
-  });
+  // Convert headers to AG Grid column definitions
+  const columnDefs = headers.map((header) => ({
+    headerName: header.header, // Map header name
+    field: header.accessorKey, // Map field to access data
+    sortable: true, // Enable sorting
+    filter: true, // Enable filtering
+  }));
+
+  // Apply global filter to the grid
+  const onFilterTextBoxChanged = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFilter(e.target.value);
+  };
 
   return (
     <div>
@@ -52,61 +49,29 @@ export default function Table<T extends object>({
                 type="text"
                 placeholder="Search by Industry Name"
                 value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                onChange={onFilterTextBoxChanged}
                 className="w-full rounded border p-2"
               />
             </div>
-            <table className="w-full table-auto rounded-lg bg-white shadow-md">
-              <thead className="sticky top-0 z-10 bg-blue-600 text-white">
-                {table.getHeaderGroups().map((headerGroup) => (
-                  <tr key={headerGroup.id}>
-                    {headerGroup.headers.map((header) => (
-                      <th key={header.id} className="px-4 py-2">
-                        <div className="flex w-32 flex-col items-center">
-                          <span className="mb-1 font-semibold">
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
-                            )}
-                          </span>
-                          <div className="flex justify-center space-x-1">
-                            <button
-                              onClick={() => header.column.toggleSorting(false)}
-                              className="w-16 rounded bg-blue-500 px-2 py-1 text-xs text-white hover:bg-blue-600"
-                            >
-                              🔼 Asc
-                            </button>
-                            <button
-                              onClick={() => header.column.toggleSorting(true)}
-                              className="w-16 rounded bg-blue-500 px-2 py-1 text-xs text-white hover:bg-blue-600"
-                            >
-                              🔽 Desc
-                            </button>
-                          </div>
-                        </div>
-                      </th>
-                    ))}
-                  </tr>
-                ))}
-              </thead>
-              <tbody>
-                {table.getRowModel().rows.map((row) => (
-                  <tr
-                    key={row.id}
-                    className={`${row.index % 2 === 0 ? "bg-gray-100" : "bg-white"}`}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-2">
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div
+              className="ag-theme-alpine" // Apply AG Grid theme
+              style={{ height: "600px", width: "100%" }} // Set height and width
+            >
+              <AgGridReact
+                rowData={data}
+                columnDefs={columnDefs}
+                defaultColDef={{
+                  filter: true,
+                  sortable: true,
+                  resizable: true,
+                }}
+                domLayout="autoHeight"
+                pagination={true}
+                paginationPageSize={10}
+                quickFilterText={filter}
+                suppressBrowserResizeObserver={true} // 👈 Disable ResizeObserver
+              />
+            </div>
           </>
         )}
       </div>
