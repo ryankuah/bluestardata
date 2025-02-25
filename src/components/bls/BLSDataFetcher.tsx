@@ -59,7 +59,7 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
                     establishments: Number(establishments) || 0,
                     industry,
                     countyName,
-                    naicsCode: cleanedNaics || "",
+                    naicsCode: cleanedNaics ?? "",
                 };
             })
             .filter((entry): entry is IndustryData => entry !== null && entry.naicsCode !== "00")

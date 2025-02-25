@@ -1,8 +1,9 @@
 "use client";
 import { useState } from "react";
-import { AgGridReact } from "ag-grid-react"; // Import AgGridReact
-import "ag-grid-community/styles/ag-grid.css"; // Core CSS for AG Grid
-import "ag-grid-community/styles/ag-theme-alpine.css"; // Theme for AG Grid
+import { AgGridReact } from "ag-grid-react";
+import { ColDef, ColDefField } from "ag-grid-community";
+import "ag-grid-community/styles/ag-grid.css";
+import "ag-grid-community/styles/ag-theme-alpine.css";
 
 import { type Header } from "./types";
 
@@ -21,15 +22,13 @@ export default function Table<T extends object>({
 }) {
   const [filter, setFilter] = useState("");
 
-  // Convert headers to AG Grid column definitions
-  const columnDefs = headers.map((header) => ({
-    headerName: header.header, // Map header name
-    field: header.accessorKey, // Map field to access data
-    sortable: true, // Enable sorting
-    filter: true, // Enable filtering
+  const columnDefs: ColDef<T>[] = headers.map((header) => ({
+    headerName: header.header,
+    field: header.accessorKey as ColDefField<T>,
+    sortable: true,
+    filter: true,
   }));
 
-  // Apply global filter to the grid
   const onFilterTextBoxChanged = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFilter(e.target.value);
   };
@@ -54,8 +53,8 @@ export default function Table<T extends object>({
               />
             </div>
             <div
-              className="ag-theme-alpine" // Apply AG Grid theme
-              style={{ height: "600px", width: "100%" }} // Set height and width
+              className="ag-theme-alpine"
+              style={{ height: "600px", width: "100%" }}
             >
               <AgGridReact
                 rowData={data}
@@ -69,7 +68,7 @@ export default function Table<T extends object>({
                 pagination={true}
                 paginationPageSize={10}
                 quickFilterText={filter}
-                suppressBrowserResizeObserver={true} // 👈 Disable ResizeObserver
+                suppressBrowserResizeObserver={true}
               />
             </div>
           </>
