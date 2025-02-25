@@ -16,6 +16,14 @@ type BLSResponse = {
     };
 };
 
+type IndustryData = {
+    employees: number;
+    establishments: number;
+    industry: string;
+    countyName: string;
+    naicsCode: string;
+};
+
 export async function fetchBLSData(stateFips: string, countyFips: string): Promise<BLSDataSummary[]> {
     const areaCode = stateFips + countyFips;
     const dataTypes = ["1", "2", "3", "4", "5"];
@@ -36,21 +44,37 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
         throw new Error("Invalid response from Census API");
     }
 
-    const topIndustries = labourData
-        .slice(1)
-        .map(([employees, establishments, industry, countyName, naics, state, county]) => ({
-            employees: Number(employees) ?? 0,
-            establishments: Number(establishments) ?? 0,
-            industry,
-            countyName,
-            naicsCode: naics,
-        }))
-        .filter((entry) => entry.naicsCode !== "00")
+    const topIndustries: IndustryData[] = Object.values(
+        labourData
+            .slice(1)
+            .map((entry: string[]): IndustryData | null => {
+                const [employees, establishments, industry, countyName, naics] = entry;
+    
+                if (!industry || !countyName || !naics) return null;
+    
+                const cleanedNaics = naics.includes("-") ? naics.split("-")[0] : naics;
+    
+                return {
+                    employees: Number(employees) || 0,
+                    establishments: Number(establishments) || 0,
+                    industry,
+                    countyName,
+                    naicsCode: cleanedNaics || "",
+                };
+            })
+            .filter((entry): entry is IndustryData => entry !== null && entry.naicsCode !== "00")
+            .reduce<Record<string, IndustryData>>((acc, entry) => {
+                const existingEntry = acc[entry.industry];
+    
+                if (!existingEntry || Number(entry.naicsCode) < Number(existingEntry.naicsCode)) {
+                    acc[entry.industry] = entry;
+                }
+                return acc;
+            }, {})
+    )
         .sort((a, b) => b.employees - a.employees)
         .slice(0, 5);
-
-    console.log("Top 5 Industries:", topIndustries);
-
+    
     const industryMap = Object.fromEntries(topIndustries.map(({ naicsCode, industry }) => [naicsCode, industry]));
     industryMap["10"] = "Total, all industries";
 
@@ -59,8 +83,6 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
     const seriesIds = industryCodes.flatMap((industry) =>
         dataTypes.map((dataType) => `ENU${areaCode}${dataType}${size}${ownership}${industry}`)
     );
-
-    console.log(seriesIds);
 
     const payload = {
         seriesid: seriesIds,
@@ -106,8 +128,6 @@ export async function fetchBLSData(stateFips: string, countyFips: string): Promi
             summary[year].data[dataType][industryName] = Number(value) ?? 0;
         }
     }
-
-    console.log(summary);
 
     return Object.values(summary).sort((a, b) => Number(a.year) - Number(b.year));
 }
