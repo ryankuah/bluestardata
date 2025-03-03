@@ -3,12 +3,12 @@ import { countyDatas, stateDatas } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
 import { type DataSet } from "./types";
 
-export async function addCountyData(
+export async function addCountyData<T>(
   geoId: string,
   category: string,
   name: string,
   source: string,
-  dataSet: DataSet[] | string | number,
+  dataSet: T,
 ) {
   //Check if data already exists
   const row = await db.query.countyDatas

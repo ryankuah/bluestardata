@@ -1,4 +1,8 @@
-import { addStateData, addCountyData } from "@/app/scripts/scripts";
+import {
+  addStateData,
+  addCountyData,
+  addNCESData,
+} from "@/app/scripts/scripts";
 import { addFredIds } from "@/utils/fred/utils";
 import { addAllACSData, fetchACS } from "@/utils/census/acs/utils";
 
@@ -24,7 +28,7 @@ export default async function Page() {
   }
   async function handleACSTest() {
     "use server";
-    await fetchACS("20", "087");
+    await addNCESData();
   }
 
   return (

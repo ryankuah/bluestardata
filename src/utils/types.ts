@@ -9,5 +9,6 @@ export type CountyPageData = {
     name: string;
     fipsCode: string;
   };
-  data: Record<string, Record<string, Record<string, DataSet[]>>>;
+  acsse: Record<string, Record<string, DataSet[]>>;
+  NCES: object[];
 };

@@ -11,8 +11,9 @@ import CensusDataFetcher from "@/components/census/CensusDataFetcher";
 import ACSSE from "@/components/census/ACSSE";
 import type { CountyData, DataSet } from "@/utils/db/types";
 import PopulationEstimates from "@/components/population_estimates/population_estimates";
-
+import NCES from "@/components/nces/NCES";
 import type { CountyPageData } from "@/utils/types";
+import type { NCESData } from "@/utils/nces/types";
 
 const convertToObject = (data: CountyData[]) => {
   const out: Record<string, Record<string, Record<string, DataSet[]>>> = {};
@@ -40,7 +41,7 @@ const convertToObject = (data: CountyData[]) => {
     out[source][category][name] = item.dataSet;
   });
 
-  return out;
+  return out.acsse!;
 };
 
 export default async function Page({
@@ -82,9 +83,13 @@ export default async function Page({
       name: state,
       fipsCode: stateFips,
     },
-    data: convertToObject(countyData),
+    acsse: convertToObject(
+      countyData.filter((data) => data.source === "acsse"),
+    ),
+    NCES: countyData
+      .filter((data) => data.source === "NCES_PUBLIC")
+      .map((row) => row.dataSet),
   };
-  console.log("HERE", allData);
 
   return (
     <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
@@ -104,8 +109,8 @@ export default async function Page({
           </h2>
           <p className="text-gray-600">
             Population:{" "}
-            {allData.data
-              .acsse!.demographics?.population?.at(-1)
+            {allData.acsse.demographics?.population
+              ?.at(-1)
               ?.data.total?.toLocaleString() ?? "NO DATA"}
           </p>
           <p className="text-gray-600">Median Age: {}</p>
@@ -170,6 +175,17 @@ export default async function Page({
       </section>
       <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         <ACSSE allData={allData} />
+      </section>
+      <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <NCES
+          feature={countyBorder}
+          token={env.MAPBOX_TOKEN}
+          state={state}
+          county={county}
+          stateFips={stateFips}
+          countyFips={countyFips}
+          data={Object.values(allData.NCES) as NCESData[]}
+        ></NCES>
       </section>
     </div>
   );

@@ -90,6 +90,7 @@ export default async function CensusDataFetcher({
         data={data}
         state={state}
         county={county}
+        search="Search by Industry Name"
       />
     );
   } catch (e) {

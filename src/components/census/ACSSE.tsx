@@ -7,9 +7,9 @@ import { useEffect, useState } from "react";
 
 export default function ACSSE({ allData }: { allData: CountyPageData }) {
   const [selectedYear, setSelectedYear] = useState(2023);
-  const acsseData = allData.data.acsse;
+  const acsseData = allData.acsse;
   if (!acsseData) return <p> NO DATA </p>;
-  if (!allData.data.acsse?.demographics?.population?.[0]?.data) {
+  if (!allData.acsse?.demographics?.population?.[0]?.data) {
     return <p> NO DATA </p>;
   }
   const availableYears = [2023, 2022, 2021, 2019, 2018, 2017, 2016, 2015, 2014];

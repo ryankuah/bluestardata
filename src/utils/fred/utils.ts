@@ -73,7 +73,7 @@ export async function addFredIds() {
       const countyId = await getCountyGeoId(county.name, id.name);
       await addCountyData(
         countyId,
-        "Refernce Code",
+        "Reference Code",
         "FRED",
         "Fred ID",
         county.id,

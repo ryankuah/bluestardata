@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { AgGridReact } from "ag-grid-react";
-import { ColDef, ColDefField } from "ag-grid-community";
+import { type ColDef, type ColDefField } from "ag-grid-community";
 import "ag-grid-community/styles/ag-grid.css";
 import "ag-grid-community/styles/ag-theme-alpine.css";
 
@@ -13,12 +13,14 @@ export default function Table<T extends object>({
   county,
   state,
   name,
+  search,
 }: {
   data: T[];
   headers: Header[];
   county: string;
   state: string;
   name: string;
+  search?: string;
 }) {
   const [filter, setFilter] = useState("");
 
@@ -43,15 +45,17 @@ export default function Table<T extends object>({
           <div className="py-4 text-center text-gray-500">No Data Found</div>
         ) : (
           <>
-            <div className="mb-4">
-              <input
-                type="text"
-                placeholder="Search by Industry Name"
-                value={filter}
-                onChange={onFilterTextBoxChanged}
-                className="w-full rounded border p-2"
-              />
-            </div>
+            {search && (
+              <div className="mb-4">
+                <input
+                  type="text"
+                  placeholder={search}
+                  value={filter}
+                  onChange={onFilterTextBoxChanged}
+                  className="w-full rounded border p-2"
+                />
+              </div>
+            )}
             <div
               className="ag-theme-alpine"
               style={{ height: "600px", width: "100%" }}
@@ -77,3 +81,4 @@ export default function Table<T extends object>({
     </div>
   );
 }
+
