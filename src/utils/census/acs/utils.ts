@@ -246,7 +246,11 @@ export async function addAllACSData() {
       geoId: true,
     },
   });
-  for (const item of allFips.filter((item) => !item.geoId.startsWith("72"))) {
-    await fetchACS(item.geoId.substring(0, 2), item.geoId.substring(2, 6));
-  }
+  await Promise.all(
+    allFips
+      .filter((item) => !item.geoId.startsWith("72"))
+      .map((item) =>
+        fetchACS(item.geoId.substring(0, 2), item.geoId.substring(2, 6)),
+      ),
+  );
 }

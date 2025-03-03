@@ -21,9 +21,7 @@ export async function addCountyData(
         ),
     })
     .execute();
-  console.log("id", row);
   const id = row?.id;
-  console.log(row?.countyId === geoId);
   //Update
   if (id) {
     console.log("Updating county data", id);
