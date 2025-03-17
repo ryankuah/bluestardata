@@ -16,8 +16,8 @@ export default function ACSSE({ allData }: { allData: CountyPageData }) {
   return (
     <div className="mx-auto flex h-full w-full max-w-6xl flex-col items-start space-y-4">
       <h1 className="mb-4 text-xl font-semibold">
-        Data from Census Beureu ACS Supplemental Data for {allData.county.name},{" "}
-        {allData.state.name} (ACSSE)
+        Data from Census Beureau ACS Supplemental Data for {allData.county.name}
+        , {allData.state.name} (ACSSE)
       </h1>
       <div className="flex-1">
         <label className="mb-2 block font-medium text-gray-700">
@@ -150,7 +150,9 @@ function DemographicSection({
           >
             <span className="flex text-gray-600">{row.label}</span>
             <div className="flex items-center gap-4">
-              <span className="text-right font-medium">{row.value}</span>
+              <span className="text-right font-medium">
+                {row.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+              </span>
             </div>
           </div>
         ))}
