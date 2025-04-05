@@ -116,10 +116,41 @@ export default async function Page({
               ?.at(-1)
               ?.data.total?.toLocaleString() ?? "NO DATA"}
           </p>
-          <p className="text-gray-600">Median Age: {}</p>
-          <p className="text-gray-600">Median Income: TBD</p>
-          <p className="text-gray-600">Population Growth Rate</p>
-          <p className="text-gray-600">Unemployment Rate: TBD</p>
+          <p className="text-gray-600">
+            Median Age:{" "}
+            {allData.acsse.age?.medianAge
+              ?.at(-1)
+              ?.data.combined?.toLocaleString() ?? "NO DATA"}
+          </p>
+          <p className="text-gray-600">Median Income: TODO</p>
+          <p className="text-gray-600">
+            Population Growth Rate:{" "}
+            {(() => {
+              const populationData = allData.acsse.demographics?.population;
+
+              if (!populationData || populationData.length < 2) {
+                return "NO DATA";
+              }
+
+              const lastValue = populationData.at(-1)?.data?.total;
+              const prevValue = populationData.at(-2)?.data?.total;
+
+              if (
+                typeof lastValue !== "number" ||
+                typeof prevValue !== "number" ||
+                prevValue === 0
+              ) {
+                return "NO DATA";
+              }
+              const growthRate = lastValue / prevValue - 1;
+              return growthRate.toLocaleString(undefined, {
+                style: "percent",
+                minimumFractionDigits: 1,
+                maximumFractionDigits: 2,
+              });
+            })()}
+          </p>
+          <p className="text-gray-600">Unemployment Rate: TODO</p>
         </div>
       </section>
 
