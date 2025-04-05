@@ -1,7 +1,8 @@
 import {
   addStateData,
   addCountyData,
-  addNCESData,
+  addNCESPublicData,
+  addNCESPrivateData,
 } from "@/app/scripts/scripts";
 import { addFredIds } from "@/utils/fred/utils";
 import { addAllACSData, fetchACS } from "@/utils/census/acs/utils";
@@ -26,9 +27,14 @@ export default async function Page() {
     "use server";
     await addAllACSData();
   }
-  async function handleACSTest() {
+  async function handleNCESPublic() {
     "use server";
-    await addNCESData();
+    await addNCESPublicData();
+  }
+
+  async function handleNCESPrivate() {
+    "use server";
+    await addNCESPrivateData();
   }
 
   return (
@@ -45,8 +51,11 @@ export default async function Page() {
       <form action={handleACSData}>
         <button type="submit">Add All ACS Data</button>
       </form>
-      <form action={handleACSTest}>
-        <button type="submit">Test</button>
+      <form action={handleNCESPublic}>
+        <button type="submit">Add All NCES Public School Data</button>
+      </form>
+      <form action={handleNCESPrivate}>
+        <button type="submit">Add All NCES Private School Data</button>
       </form>
     </div>
   );

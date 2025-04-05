@@ -8,7 +8,7 @@ import { addCountyData as dbaddCountyData } from "@/utils/db/utils";
 //import { privateSchools } from "./privatences"
 import fs from "fs";
 
-export async function addNCESData() {
+export async function addNCESPublicData() {
   const csvContent = fs
     .readFileSync("./public/publicnces.csv", "utf-8")
     .split("\n")
@@ -68,6 +68,35 @@ export async function addNCESData() {
       "Education",
       dataArray[9]!,
       "NCES_PUBLIC",
+      dataObject,
+    );
+  }
+}
+
+export async function addNCESPrivateData() {
+  const csvContent = fs
+    .readFileSync("./public/privatences.csv", "utf-8")
+    .split("\n")
+    .slice(1);
+
+  for (const school of csvContent) {
+    const dataArray = school.split(",");
+    const dataObject = {
+      PPIN: dataArray[3],
+      NAME: dataArray[4],
+      ADDRESS: dataArray[5],
+      CITY: dataArray[6],
+      STABR: dataArray[7],
+      ZIP: dataArray[8],
+      COUNTY: dataArray[11],
+      LATITUDE: dataArray[13],
+      LONGITUDE: dataArray[14],
+    };
+    await dbaddCountyData(
+      dataArray[10]!,
+      "Education",
+      dataArray[4]!,
+      "NCES_PRIVATE",
       dataObject,
     );
   }

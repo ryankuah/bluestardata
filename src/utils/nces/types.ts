@@ -1,4 +1,4 @@
-export type NCESData = {
+export type PublicNCESData = {
   NCESSCH: string;
   STABR: string;
   LEAID: string;
@@ -42,6 +42,17 @@ export type NCESData = {
   MALE: string;
   FEMALE: string;
   TEACHERS: string;
+  LATITUDE: string;
+  LONGITUDE: string;
+};
+export type PrivateNCESData = {
+  PPIN: string;
+  NAME: string;
+  ADDRESS: string;
+  CITY: string;
+  STABR: string;
+  ZIP: string;
+  COUNTY: string;
   LATITUDE: string;
   LONGITUDE: string;
 };

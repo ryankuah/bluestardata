@@ -13,7 +13,7 @@ import type { CountyData, DataSet } from "@/utils/db/types";
 import PopulationEstimates from "@/components/population_estimates/population_estimates";
 import NCES from "@/components/nces/NCES";
 import type { CountyPageData } from "@/utils/types";
-import type { NCESData } from "@/utils/nces/types";
+import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
 
 const convertToObject = (data: CountyData[]) => {
   const out: Record<string, Record<string, Record<string, DataSet[]>>> = {};
@@ -86,8 +86,11 @@ export default async function Page({
     acsse: convertToObject(
       countyData.filter((data) => data.source === "acsse"),
     ),
-    NCES: countyData
+    publicNCES: countyData
       .filter((data) => data.source === "NCES_PUBLIC")
+      .map((row) => row.dataSet),
+    privateNCES: countyData
+      .filter((data) => data.source === "NCES_PRIVATE")
       .map((row) => row.dataSet),
   };
 
@@ -184,8 +187,13 @@ export default async function Page({
           county={county}
           stateFips={stateFips}
           countyFips={countyFips}
-          data={Object.values(allData.NCES) as NCESData[]}
-        ></NCES>
+          publicData={
+            Object.values(allData.publicNCES) as unknown as PublicNCESData[]
+          }
+          privateData={
+            Object.values(allData.privateNCES) as unknown as PrivateNCESData[]
+          }
+        />
       </section>
     </div>
   );

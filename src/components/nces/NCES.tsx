@@ -1,7 +1,7 @@
 import { type Feature } from "geojson";
 import Table from "@/components/dataUI/Table";
 import Map from "./map";
-import type { NCESData } from "@/utils/nces/types";
+import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
 
 export default function NCES({
   feature,
@@ -10,7 +10,8 @@ export default function NCES({
   county,
   stateFips,
   countyFips,
-  data,
+  publicData,
+  privateData,
 }: {
   feature: Feature;
   token: string;
@@ -18,10 +19,11 @@ export default function NCES({
   county: string;
   countyFips: string;
   stateFips: string;
-  data: NCESData[];
+  publicData: PublicNCESData[];
+  privateData: PrivateNCESData[];
 }) {
-  const tableData = Object.values(data);
-  const headers = [
+  const publicTableData = Object.values(publicData);
+  const publicHeaders = [
     {
       header: "School Name",
       accessorKey: "NAME",
@@ -132,15 +134,43 @@ export default function NCES({
     },
   ];
 
+  const privateTableData = Object.values(privateData);
+  const privateHeaders = [
+    {
+      header: "School Name",
+      accessorKey: "NAME",
+    },
+    {
+      header: "City",
+      accessorKey: "CITY",
+    },
+    {
+      header: "Address",
+      accessorKey: "ADDRESS",
+    },
+  ];
+
   return (
     <div>
-      <Map feature={feature} token={token} data={tableData} />
+      <Map
+        feature={feature}
+        token={token}
+        publicData={publicTableData}
+        privateData={privateTableData}
+      />
       <Table
-        data={tableData}
+        data={publicTableData}
         state={state}
         county={county}
         name="Public Schools"
-        headers={headers}
+        headers={publicHeaders}
+      />
+      <Table
+        data={privateTableData}
+        state={state}
+        county={county}
+        name="Private Schools"
+        headers={privateHeaders}
       />
     </div>
   );

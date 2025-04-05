@@ -5,19 +5,24 @@ import { type Feature } from "geojson";
 import type { LayerProps } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 import { useState, useEffect } from "react";
-import type { NCESData } from "@/utils/nces/types";
+import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
+import { IoIosSchool } from "react-icons/io";
 
 export default function CountyMap({
   feature,
   token,
-  data: data,
+  publicData,
+  privateData,
 }: {
   feature: Feature;
   token: string;
-  data: NCESData[];
+  publicData: PublicNCESData[];
+  privateData: PrivateNCESData[];
 }) {
   const [minLng, minLat, maxLng, maxLat] = bbox(feature);
-  const [popup, setPopup] = useState<NCESData | null>(null);
+  const [popup, setPopup] = useState<PublicNCESData | PrivateNCESData | null>(
+    null,
+  );
   return (
     <Map
       initialViewState={{
@@ -35,9 +40,8 @@ export default function CountyMap({
       mapboxAccessToken={token}
       style={{ height: "70vh", width: "70vw" }}
     >
-      {data.map((school) => {
+      {publicData.map((school) => {
         return (
-          //i'm too lazy to define the type so here are squiggly lines
           <Marker
             key={school.NAME}
             longitude={Number(school.LONGITUDE)}
@@ -47,7 +51,25 @@ export default function CountyMap({
               e.originalEvent.stopPropagation();
               setPopup(school);
             }}
-          />
+          >
+            <IoIosSchool color="red" />
+          </Marker>
+        );
+      })}
+      {privateData.map((school) => {
+        return (
+          <Marker
+            key={school.NAME}
+            longitude={Number(school.LONGITUDE)}
+            latitude={Number(school.LATITUDE)}
+            pitchAlignment="map"
+            onClick={(e) => {
+              e.originalEvent.stopPropagation();
+              setPopup(school);
+            }}
+          >
+            <IoIosSchool color="yellow" />
+          </Marker>
         );
       })}
       {popup && (
