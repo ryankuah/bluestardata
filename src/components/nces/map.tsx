@@ -4,9 +4,10 @@ import { Map, Source, Layer, Marker, Popup } from "react-map-gl";
 import { type Feature } from "geojson";
 import type { LayerProps } from "react-map-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
 import { IoIosSchool } from "react-icons/io";
+import { type MapboxEvent } from "mapbox-gl";
 
 export default function CountyMap({
   feature,
@@ -23,6 +24,12 @@ export default function CountyMap({
   const [popup, setPopup] = useState<PublicNCESData | PrivateNCESData | null>(
     null,
   );
+  const [minZoomLevel, setMinZoomLevel] = useState(0); // Start with a low default
+  const handleMapLoad = useCallback((evt: MapboxEvent) => {
+    const map = evt.target;
+    const currentZoom = map.getZoom();
+    setMinZoomLevel(currentZoom);
+  }, []);
   return (
     <Map
       initialViewState={{
@@ -39,6 +46,8 @@ export default function CountyMap({
       mapStyle="mapbox://styles/mapbox/light-v9"
       mapboxAccessToken={token}
       style={{ height: "70vh", width: "70vw" }}
+      onLoad={handleMapLoad}
+      minZoom={minZoomLevel}
     >
       {publicData.map((school) => {
         return (

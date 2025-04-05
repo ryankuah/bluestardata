@@ -151,13 +151,15 @@ export default function NCES({
   ];
 
   return (
-    <div>
-      <Map
-        feature={feature}
-        token={token}
-        publicData={publicTableData}
-        privateData={privateTableData}
-      />
+    <div className="flex h-full w-full flex-col">
+      <div className="mx-auto h-max w-max">
+        <Map
+          feature={feature}
+          token={token}
+          publicData={publicTableData}
+          privateData={privateTableData}
+        />
+      </div>
       <Table
         data={publicTableData}
         state={state}
