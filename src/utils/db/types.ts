@@ -1,5 +1,3 @@
-import type { NCESData } from "@/utils/nces/types";
-
 export type DataSet = {
   name: string;
   data: Record<string, string | number>;
