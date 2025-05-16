@@ -12,6 +12,7 @@ import ACSSE from "@/components/census/ACSSE";
 import type { CountyData, DataSet } from "@/utils/db/types";
 import PopulationEstimates from "@/components/population_estimates/population_estimates";
 import NCES from "@/components/nces/NCES";
+import HUDDataFetcher from "@/components/hud/HUDDataFetcher";
 import type { CountyPageData } from "@/utils/types";
 import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
 
@@ -224,6 +225,14 @@ export default async function Page({
           privateData={
             Object.values(allData.privateNCES) as unknown as PrivateNCESData[]
           }
+        />
+      </section>
+      <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+        <HUDDataFetcher
+          state={state}
+          county={county}
+          stateFips={stateFips}
+          countyFips={countyFips}
         />
       </section>
     </div>
