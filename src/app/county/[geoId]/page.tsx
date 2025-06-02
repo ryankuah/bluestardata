@@ -14,6 +14,7 @@ import PopulationEstimates from "@/components/population_estimates/population_es
 import NCES from "@/components/nces/NCES";
 import type { CountyPageData } from "@/utils/types";
 import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
+import DetailedCrimeView from "@/components/crime/detailedCrimeView";
 
 const convertToObject = (data: CountyData[]) => {
   const out: Record<string, Record<string, Record<string, DataSet[]>>> = {};
@@ -193,6 +194,11 @@ export default async function Page({
           stateFips={stateFips}
           countyFips={countyFips}
         />
+      </section>
+
+      <section className="w-full max-w-6xl rounded-lg bg-white p-0 shadow-md md:p-0">
+        {/* The DetailedCrimeView component now handles its own internal padding and title */}
+        <DetailedCrimeView stateFips={stateFips} stateName={state} />
       </section>
       {
         // <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
