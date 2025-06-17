@@ -42,7 +42,8 @@ const convertToObject = (data: CountyData[]) => {
     out[source][category][name] = item.dataSet;
   });
 
-  return out.acsse!;
+  // Return an empty object if acsse doesn't exist, instead of undefined
+  return out.acsse ?? {};
 };
 
 export default async function Page({
