@@ -1,8 +1,9 @@
 // src/app/api/crime-data/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { NextResponse } from "next/server";
 
 const API_KEY =
-  process.env.FBI_API_KEY || "iiHnOKfno2Mgkt5AynpvPpUQTEyxE77jo1RU8PIv";
+  process.env.FBI_API_KEY ?? "iiHnOKfno2Mgkt5AynpvPpUQTEyxE77jo1RU8PIv";
 const API_BASE_URL = "https://api.usa.gov/crime/fbi/cde";
 
 // For summarized crime types (annual data)
@@ -18,20 +19,20 @@ interface OffenseYearlyData {
   total: number;
   male?: number;
   female?: number;
-  byRace?: { [key: string]: number };
-  byAge?: { [key: string]: number };
+  byRace?: Record<string, number>;
+  byAge?: Record<string, number>;
 }
 
 // This is the JSON structure for Arrest Demographics
 interface ArrestDemographicsData {
-  "Arrestee Sex": { [key: string]: number };
-  "Offense Name": { [key: string]: number };
-  "Arrestee Race": { [key: string]: number };
-  "Offense Category": { [key: string]: number };
-  "Offense Breakdown": { [key: string]: number };
-  "Male Arrests By Age": { [key: string]: number };
-  "Female Arrests By Age": { [key: string]: number };
-  cde_properties?: any;
+  "Arrestee Sex": Record<string, number>;
+  "Offense Name": Record<string, number>;
+  "Arrestee Race": Record<string, number>;
+  "Offense Category": Record<string, number>;
+  "Offense Breakdown": Record<string, number>;
+  "Male Arrests By Age": Record<string, number>;
+  "Female Arrests By Age": Record<string, number>;
+  cde_properties?: Record<string, Record<string, string>>;
 }
 
 // Unified API response structure for the frontend
@@ -49,7 +50,7 @@ interface AppCrimeApiResponse {
 }
 
 // FBI offense codes mapping
-const OFFENSE_CODES: { [key: string]: string } = {
+const OFFENSE_CODES: Record<string, string> = {
   all: "All Offenses",
   "11": "Murder and Nonnegligent Homicide",
   "23": "Rape",
@@ -77,12 +78,19 @@ async function fetchSingleSummarizedOffenseData(
   fromDate: string,
   toDate: string,
   crimeTypeSlug: string,
-): Promise<any> {
+): Promise<{
+  offenses?: {
+    actuals?: Record<string, Record<string, string>>;
+  };
+  populations?: {
+    population?: Record<string, Record<string, string>>;
+  };
+}> {
   const url = `${API_BASE_URL}/summarized/state/${stateAbbr}/${crimeTypeSlug}`;
   const params = new URLSearchParams({
     from: fromDate,
     to: toDate,
-    API_KEY: API_KEY || "",
+    API_KEY: API_KEY ?? "",
   });
   console.log(`Fetching FBI Summarized Offense: ${url}?${params.toString()}`);
   const response = await fetch(`${url}?${params.toString()}`);
@@ -96,7 +104,14 @@ async function fetchSingleSummarizedOffenseData(
     );
   }
   try {
-    return await response.json();
+    return (await response.json()) as {
+      offenses?: {
+        actuals?: Record<string, Record<string, string>>;
+      };
+      populations?: {
+        population?: Record<string, Record<string, string>>;
+      };
+    };
   } catch (e) {
     console.error(
       `Failed to parse JSON for summarized slug ${crimeTypeSlug}:`,
@@ -111,13 +126,17 @@ async function fetchArrestDemographicsData(
   stateAbbr: string,
   fromDate: string,
   toDate: string,
-): Promise<any> {
+): Promise<
+  | ArrestDemographicsData
+  | { data: ArrestDemographicsData }
+  | ArrestDemographicsData[]
+> {
   const url = `${API_BASE_URL}/arrest/state/${stateAbbr}/all`;
   const params = new URLSearchParams({
     type: "totals",
     from: fromDate,
     to: toDate,
-    API_KEY: API_KEY || "",
+    API_KEY: API_KEY ?? "",
   });
   console.log(`Fetching FBI Arrest Demographics: ${url}?${params.toString()}`);
   const response = await fetch(`${url}?${params.toString()}`);
@@ -131,10 +150,13 @@ async function fetchArrestDemographicsData(
     );
   }
   try {
-    const data = await response.json();
+    const data = (await response.json()) as
+      | ArrestDemographicsData
+      | { data: ArrestDemographicsData }
+      | ArrestDemographicsData[];
     console.log(
       "Raw arrest demographics data structure:",
-      Object.keys(data || {}),
+      Object.keys((data as Record<string, unknown>) ?? {}),
     );
     return data;
   } catch (e) {
@@ -157,7 +179,7 @@ async function fetchOffenseDataForYear(
     type: "totals",
     from: fromDate,
     to: toDate,
-    API_KEY: API_KEY || "",
+    API_KEY: API_KEY ?? "",
   });
 
   console.log(`Fetching offense data for ${year}: ${url}?${params.toString()}`);
@@ -174,18 +196,18 @@ async function fetchOffenseDataForYear(
   }
 
   try {
-    const data = await response.json();
+    const data = (await response.json()) as ArrestDemographicsData;
 
     // Parse the response to extract totals
     const totalArrests =
-      (data["Arrestee Sex"]?.Male || 0) + (data["Arrestee Sex"]?.Female || 0);
+      (data["Arrestee Sex"]?.Male ?? 0) + (data["Arrestee Sex"]?.Female ?? 0);
 
     return {
       year,
       total: totalArrests,
-      male: data["Arrestee Sex"]?.Male || 0,
-      female: data["Arrestee Sex"]?.Female || 0,
-      byRace: data["Arrestee Race"] || {},
+      male: data["Arrestee Sex"]?.Male ?? 0,
+      female: data["Arrestee Sex"]?.Female ?? 0,
+      byRace: data["Arrestee Race"] ?? {},
       byAge: {
         ...data["Male Arrests By Age"],
         ...data["Female Arrests By Age"],
@@ -223,7 +245,13 @@ async function fetchOffenseYearlyTrend(
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const body = (await req.json()) as {
+      stateFips: string;
+      years: number[];
+      crimeTypeSlug: string;
+      targetKey?: string;
+      category?: string;
+    };
     const { stateFips, years = [], crimeTypeSlug, targetKey, category } = body;
 
     if (!stateFips || !years.length || !crimeTypeSlug) {
@@ -250,13 +278,13 @@ export async function POST(req: NextRequest) {
     const toDate = `12-${endYear}`;
 
     console.log(
-      `API Route: Processing request for ${stateAbbr}, type slug: ${crimeTypeSlug}, category: ${category}, range: ${fromDate} to ${toDate}`,
+      `API Route: Processing request for ${stateAbbr}, type slug: ${crimeTypeSlug}, category: ${category ?? "unknown"}, range: ${fromDate} to ${toDate}`,
     );
 
     // Handle offense-specific yearly trends
     if (crimeTypeSlug.startsWith("OFFENSE_")) {
       const offenseCode = crimeTypeSlug.replace("OFFENSE_", "");
-      const offenseName = OFFENSE_CODES[offenseCode] || "Unknown Offense";
+      const offenseName = OFFENSE_CODES[offenseCode] ?? "Unknown Offense";
 
       console.log(
         `Fetching yearly trend for offense: ${offenseCode} (${offenseName})`,
@@ -284,12 +312,13 @@ export async function POST(req: NextRequest) {
       );
 
       // Handle different possible response structures
-      let finalArrestData = arrestData;
-      if (arrestData.data) {
+      let finalArrestData: ArrestDemographicsData;
+      if ("data" in arrestData && arrestData.data) {
         finalArrestData = arrestData.data;
-      }
-      if (Array.isArray(finalArrestData) && finalArrestData.length > 0) {
-        finalArrestData = finalArrestData[0];
+      } else if (Array.isArray(arrestData) && arrestData.length > 0) {
+        finalArrestData = arrestData[0];
+      } else {
+        finalArrestData = arrestData as ArrestDemographicsData;
       }
 
       return NextResponse.json({
@@ -339,12 +368,19 @@ export async function POST(req: NextRequest) {
 // transformMonthlyDataToAnnual function remains as previously defined
 // It processes responses from fetchSingleSummarizedOffenseData
 function transformMonthlyDataToAnnual(
-  rawCrimeData: any,
+  rawCrimeData: {
+    offenses?: {
+      actuals?: Record<string, Record<string, string>>;
+    };
+    populations?: {
+      population?: Record<string, Record<string, string>>;
+    };
+  },
   dataKey: string,
   requestedYears: number[],
   stateAbbr: string,
 ): { summaries: SummarizedYearData[]; crimeTypeKey: string } {
-  const summariesByYear: { [year: number]: SummarizedYearData } = {};
+  const summariesByYear: Record<number, SummarizedYearData> = {};
   requestedYears.forEach((year) => {
     summariesByYear[year] = { year };
   });
@@ -364,7 +400,7 @@ function transformMonthlyDataToAnnual(
         requestedYears.includes(year)
       ) {
         summariesByYear[year][dataKey] =
-          ((summariesByYear[year][dataKey] || 0) as number) + parsedCount;
+          (summariesByYear[year][dataKey] ?? 0) + parsedCount;
       }
     }
   }
@@ -449,7 +485,6 @@ function getStateAbbrFromFips(fips: string): string | null {
     "54": "WV",
     "55": "WI",
     "56": "WY",
-    "72": "PR",
   };
-  return stateMapping[fips] || null;
+  return stateMapping[fips] ?? null;
 }

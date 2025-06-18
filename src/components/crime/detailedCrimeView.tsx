@@ -29,14 +29,14 @@ interface SummarizedYearData {
 
 // This is the JSON structure for Arrest Demographics you provided
 interface ArrestDemographicsData {
-  "Arrestee Sex": { [key: string]: number };
-  "Offense Name": { [key: string]: number };
-  "Arrestee Race": { [key: string]: number };
-  "Offense Category": { [key: string]: number };
-  "Offense Breakdown": { [key: string]: number };
-  "Male Arrests By Age": { [key: string]: number };
-  "Female Arrests By Age": { [key: string]: number };
-  cde_properties?: any;
+  "Arrestee Sex": Record<string, number>;
+  "Offense Name": Record<string, number>;
+  "Arrestee Race": Record<string, number>;
+  "Offense Category": Record<string, number>;
+  "Offense Breakdown": Record<string, number>;
+  "Male Arrests By Age": Record<string, number>;
+  "Female Arrests By Age": Record<string, number>;
+  cde_properties?: Record<string, Record<string, string>>;
 }
 
 // Interface for offense-specific yearly data
@@ -45,8 +45,8 @@ interface OffenseYearlyData {
   total: number;
   male?: number;
   female?: number;
-  byRace?: { [key: string]: number };
-  byAge?: { [key: string]: number };
+  byRace?: Record<string, number>;
+  byAge?: Record<string, number>;
 }
 
 // Unified API response structure from our backend
@@ -75,7 +75,7 @@ const yearOptions: number[] = Array.from(
 ).sort((a, b) => a - b);
 
 // FBI offense codes mapping
-const OFFENSE_CODES: { [key: string]: string } = {
+const OFFENSE_CODES: Record<string, string> = {
   all: "All Offenses",
   "11": "Murder and Nonnegligent Homicide",
   "23": "Rape",
@@ -177,8 +177,8 @@ export default function DetailedCrimeView({
         value: "all",
         label: "All Offenses (Yearly Trend)",
         targetKey: "all",
-        category: "offense_trend"
-      }
+        category: "offense_trend",
+      },
   );
 
   const handleFetchData = useCallback(async () => {
@@ -212,14 +212,14 @@ export default function DetailedCrimeView({
         }),
       });
 
-      const responseData = await response.json();
+      const responseData = (await response.json()) as AppCrimeApiResponse;
       if (!response.ok) {
         throw new Error(
-          responseData.message || `API request failed: ${response.status}`,
+          responseData.message ?? `API request failed: ${response.status}`,
         );
       }
 
-      setCrimeData(responseData as AppCrimeApiResponse);
+      setCrimeData(responseData);
 
       // Check for empty results based on dataType
       if (
@@ -266,8 +266,20 @@ export default function DetailedCrimeView({
   };
 
   // Custom tooltip for charts
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
+  const CustomTooltip = ({
+    active,
+    payload,
+    label,
+  }: {
+    active?: boolean;
+    payload?: Array<{
+      name: string;
+      value: number;
+      color: string;
+    }>;
+    label?: string | number;
+  }) => {
+    if (active && payload?.length) {
       return (
         <div
           style={{
@@ -281,7 +293,7 @@ export default function DetailedCrimeView({
           <p
             style={{ margin: "0 0 5px 0", fontWeight: "bold" }}
           >{`Year: ${label}`}</p>
-          {payload.map((entry: any, index: number) => (
+          {payload.map((entry, index) => (
             <p key={index} style={{ margin: "2px 0", color: entry.color }}>
               {`${entry.name}: ${formatNumber(entry.value)}`}
             </p>
@@ -300,8 +312,8 @@ export default function DetailedCrimeView({
     const chartData = offenseData.map((d) => ({
       year: d.year,
       total: d.total,
-      male: d.male || 0,
-      female: d.female || 0,
+      male: d.male ?? 0,
+      female: d.female ?? 0,
     }));
 
     // Calculate year-over-year changes
@@ -490,13 +502,7 @@ export default function DetailedCrimeView({
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="year" />
               <YAxis />
-              <Bar
-                dataKey="changePercent"
-                fill="#666666"
-                name="Change %"
-              >
-                name="Change %"
-              >
+              <Bar dataKey="changePercent" fill="#666666" name="Change %">
                 {changeData.slice(1).map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
@@ -513,10 +519,10 @@ export default function DetailedCrimeView({
 
   // Enhanced function to render key-value pairs with better formatting and percentage calculations
   const renderDataObject = (
-    data: { [key: string]: number } | undefined,
+    data: Record<string, number> | undefined,
     title: string,
-    showPercentages: boolean = true,
-    maxItems: number = 20,
+    showPercentages = true,
+    maxItems = 20,
   ) => {
     if (!data || Object.keys(data).length === 0) {
       return (
@@ -670,8 +676,8 @@ export default function DetailedCrimeView({
 
   // Enhanced age demographics display
   const renderAgeData = (
-    maleData: { [key: string]: number } | undefined,
-    femaleData: { [key: string]: number } | undefined,
+    maleData: Record<string, number> | undefined,
+    femaleData: Record<string, number> | undefined,
     title: string,
   ) => {
     if (!maleData && !femaleData) {
@@ -700,9 +706,10 @@ export default function DetailedCrimeView({
       );
     }
 
-    const combinedAgeData: {
-      [key: string]: { male: number; female: number; total: number };
-    } = {};
+    const combinedAgeData: Record<
+      string,
+      { male: number; female: number; total: number }
+    > = {};
 
     if (maleData) {
       Object.entries(maleData).forEach(([age, count]) => {
@@ -1192,8 +1199,8 @@ export default function DetailedCrimeView({
             border: "1px solid #bbdefb",
           }}
         >
-          Please select parameters and click "Fetch Data" to explore crime
-          statistics.
+          Please select parameters and click &quot;Fetch Data&quot; to explore
+          crime statistics.
         </div>
       )}
 
@@ -1323,7 +1330,7 @@ export default function DetailedCrimeView({
             crimeData.offenseYearlyData.length > 0 &&
             renderOffenseTrendCharts(
               crimeData.offenseYearlyData,
-              crimeData.offenseName || selectedCrimeConfig.label,
+              crimeData.offenseName ?? selectedCrimeConfig.label,
             )}
 
           {/* Arrest Demographics Total */}
@@ -1388,10 +1395,10 @@ export default function DetailedCrimeView({
                         }}
                       >
                         {formatNumber(
-                          (crimeData.arrestDemographics["Arrestee Sex"]?.Male ||
+                          (crimeData.arrestDemographics["Arrestee Sex"]?.Male ??
                             0) +
                             (crimeData.arrestDemographics["Arrestee Sex"]
-                              ?.Female || 0),
+                              ?.Female ?? 0),
                         )}
                       </div>
                       <div
@@ -1420,7 +1427,7 @@ export default function DetailedCrimeView({
                         }}
                       >
                         {formatNumber(
-                          crimeData.arrestDemographics["Arrestee Sex"]?.Male ||
+                          crimeData.arrestDemographics["Arrestee Sex"]?.Male ??
                             0,
                         )}
                       </div>
@@ -1451,7 +1458,7 @@ export default function DetailedCrimeView({
                       >
                         {formatNumber(
                           crimeData.arrestDemographics["Arrestee Sex"]
-                            ?.Female || 0,
+                            ?.Female ?? 0,
                         )}
                       </div>
                       <div
@@ -1585,19 +1592,17 @@ export default function DetailedCrimeView({
                       {Object.entries(
                         crimeData.arrestDemographics.cde_properties,
                       ).map(([key, valueObj]) =>
-                        Object.entries(valueObj as Record<string, string>).map(
-                          ([source, date]) => (
-                            <li
-                              key={`${key}-${source}`}
-                              style={{ padding: "6px 0", color: "#555" }}
-                            >
-                              <span style={{ fontWeight: "500" }}>
-                                {`${key.replace(/_/g, " ")} (${source})`}:
-                              </span>{" "}
-                              <strong>{date}</strong>
-                            </li>
-                          ),
-                        ),
+                        Object.entries(valueObj).map(([source, date]) => (
+                          <li
+                            key={`${key}-${source}`}
+                            style={{ padding: "6px 0", color: "#555" }}
+                          >
+                            <span style={{ fontWeight: "500" }}>
+                              {`${key.replace(/_/g, " ")} (${source})`}:
+                            </span>{" "}
+                            <strong>{date}</strong>
+                          </li>
+                        )),
                       )}
                     </ul>
                   </div>

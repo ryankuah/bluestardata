@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import { useEffect, useState } from "react";
 import {
@@ -44,7 +44,18 @@ type HUDData = {
   }[];
 };
 
-async function fetchHUDData(stateFips: string, countyFips: string): Promise<HUDData> {
+type HUDApiResponse = {
+  data?: {
+    basicdata?: Record<string, unknown>;
+    low?: Record<string, unknown>;
+    "60percent"?: Record<string, unknown>;
+  };
+} | null;
+
+async function fetchHUDData(
+  stateFips: string,
+  countyFips: string,
+): Promise<HUDData> {
   const baseUrl = "https://www.huduser.gov/hudapi/public";
   const headers = {
     Authorization: `Bearer ${env.NEXT_PUBLIC_HUD_API_TOKEN}`,
@@ -53,12 +64,13 @@ async function fetchHUDData(stateFips: string, countyFips: string): Promise<HUDD
   const entityId = `${stateFips}${countyFips}99999`;
   const currentYear = new Date().getFullYear();
 
-  const safeParseNumber = (val: any): number => isNaN(Number(val)) ? 0 : Number(val);
+  const safeParseNumber = (val: unknown): number =>
+    isNaN(Number(val)) ? 0 : Number(val);
 
   const fmrPromises = Array.from({ length: 5 }, (_, i) => {
     const year = currentYear - i;
     return fetch(`${baseUrl}/fmr/data/${entityId}?year=${year}`, { headers })
-      .then(res => res.json())
+      .then((res) => res.json() as Promise<HUDApiResponse>)
       .catch(() => null);
   });
 
@@ -71,13 +83,13 @@ async function fetchHUDData(stateFips: string, countyFips: string): Promise<HUDD
       twoBedroom: safeParseNumber(result?.data?.basicdata?.["Two-Bedroom"]),
       threeBedroom: safeParseNumber(result?.data?.basicdata?.["Three-Bedroom"]),
       fourBedroom: safeParseNumber(result?.data?.basicdata?.["Four-Bedroom"]),
-    }
+    },
   }));
 
   const ilPromises = Array.from({ length: 5 }, (_, i) => {
     const year = currentYear - i;
     return fetch(`${baseUrl}/il/data/${entityId}?year=${year}`, { headers })
-      .then(res => res.json())
+      .then((res) => res.json() as Promise<HUDApiResponse>)
       .catch(() => null);
   });
 
@@ -89,13 +101,13 @@ async function fetchHUDData(stateFips: string, countyFips: string): Promise<HUDD
       twoPerson: safeParseNumber(result?.data?.low?.il80_p2),
       threePerson: safeParseNumber(result?.data?.low?.il80_p3),
       fourPerson: safeParseNumber(result?.data?.low?.il80_p4),
-    }
+    },
   }));
 
   const mstpPromises = Array.from({ length: 5 }, (_, i) => {
     const year = currentYear - i;
     return fetch(`${baseUrl}/mtspil/data/${entityId}?year=${year}`, { headers })
-      .then(res => res.json())
+      .then((res) => res.json() as Promise<HUDApiResponse>)
       .catch(() => null);
   });
 
@@ -107,7 +119,7 @@ async function fetchHUDData(stateFips: string, countyFips: string): Promise<HUDD
       twoBedroom: safeParseNumber(result?.data?.["60percent"]?.il60_p3),
       threeBedroom: safeParseNumber(result?.data?.["60percent"]?.il60_p4),
       fourBedroom: safeParseNumber(result?.data?.["60percent"]?.il60_p5),
-    }
+    },
   }));
 
   return {
@@ -116,7 +128,6 @@ async function fetchHUDData(stateFips: string, countyFips: string): Promise<HUDD
     mstp: mstpData,
   };
 }
-
 
 export default function HUDDataFetcher({
   state,
@@ -147,7 +158,7 @@ export default function HUDDataFetcher({
       }
     };
 
-    loadData();
+    void loadData();
   }, [stateFips, countyFips]);
 
   if (loading) {
@@ -202,7 +213,8 @@ export default function HUDDataFetcher({
             Fair Market Rents (FMR)
           </h3>
           <p className="mb-4 text-sm text-gray-600">
-            Represents the 40th percentile of gross rents for standard quality units in a given area. 
+            Represents the 40th percentile of gross rents for standard quality
+            units in a given area.
           </p>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -252,7 +264,9 @@ export default function HUDDataFetcher({
             Income Limits (IL)
           </h3>
           <p className="mb-4 text-sm text-gray-600">
-            Maximum income for a household to be considered "low income" and potentially eligible for housing assistance programs.
+            Maximum income for a household to be considered &quot;low
+            income&quot; and potentially eligible for housing assistance
+            programs.
           </p>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -296,7 +310,8 @@ export default function HUDDataFetcher({
             Small Area Fair Market Rents (MSTP)
           </h3>
           <p className="mb-4 text-sm text-gray-600">
-            ZIP level rent ceilings per bedroom size, used to set ZIP specific voucher limits.
+            ZIP level rent ceilings per bedroom size, used to set ZIP specific
+            voucher limits.
           </p>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
@@ -337,4 +352,4 @@ export default function HUDDataFetcher({
       </div>
     </div>
   );
-} 
+}
