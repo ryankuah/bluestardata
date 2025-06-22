@@ -1,7 +1,7 @@
 "use client";
 import { type Observations } from "@/utils/fred/types";
 import { useState, useRef, useEffect } from "react";
-import { fetchObservation } from "@/utils/fred/utils";
+import { fetchObservationAction } from "./actions";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -47,7 +47,7 @@ export function FREDData({
       setObservation(observation.filter((obs) => obs.code !== code[0]));
     } else {
       setSelectedCodes([...selectedCodes, code]);
-      const newObservation = await fetchObservation(code[0], code[1]);
+      const newObservation = await fetchObservationAction(code[0], code[1]);
       setObservation([...observation, newObservation]);
     }
   };

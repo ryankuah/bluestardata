@@ -16,6 +16,7 @@ import HUDDataFetcher from "@/components/hud/HUDDataFetcher";
 import type { CountyPageData } from "@/utils/types";
 import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
 import DetailedCrimeView from "@/components/crime/detailedCrimeView";
+import FRED from "@/components/fred/fred";
 import { Suspense } from "react";
 
 const convertToObject = (data: CountyData[]) => {
@@ -268,11 +269,11 @@ export default async function Page({
           <DetailedCrimeView stateFips={stateFips} stateName={state} />
         </section>
       </Suspense>
-      {
-        // <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        //   <FRED state={state} county={county} />
-        // </section>
-      }
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <FRED state={state} geoId={geoId} />
+        </section>
+      </Suspense>
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
           <PopulationEstimates

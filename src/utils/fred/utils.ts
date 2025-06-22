@@ -67,7 +67,10 @@ export async function addFredIds() {
         selection.name === "Counties" ||
         selection.name === "Parishes" ||
         selection.name === "Census Areas and Boroughs",
-    )!.id;
+    )?.id;
+
+    if (!countyID) continue;
+
     const counties = await fetchCategories(countyID);
     for (const county of counties) {
       const countyId = await getCountyGeoId(county.name, id.name);
@@ -79,5 +82,32 @@ export async function addFredIds() {
         county.id,
       );
     }
+  }
+}
+
+export async function getStateFredId(
+  stateName: string,
+): Promise<number | null> {
+  const { getStateData } = await import("@/utils/db/utils");
+  const stateFips = await getStatebyName(stateName);
+  try {
+    const fredId = await getStateData(
+      stateFips.toString(),
+      "Fred ID",
+      "Reference Code",
+    );
+    return typeof fredId === "number" ? fredId : Number(fredId);
+  } catch {
+    return null;
+  }
+}
+
+export async function getCountyFredId(geoId: string): Promise<number | null> {
+  const { getCountyData } = await import("@/utils/db/utils");
+  try {
+    const fredId = await getCountyData(geoId, "Fred ID", "Reference Code");
+    return typeof fredId === "number" ? fredId : Number(fredId);
+  } catch {
+    return null;
   }
 }
