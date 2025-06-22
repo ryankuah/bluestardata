@@ -118,7 +118,7 @@ function DemographicSection({
   }>({ name: "OHNO", data: [{ label: "ERROR", value: "OHNO" }] });
   useEffect(() => {
     if (!dataSet?.[indexProcess]) {
-      throw new Error("No Data");
+      console.log("No Data");
     }
     const data = Object.entries(dataSet[indexProcess]!.data).map(
       ([key, value]) => {

@@ -88,9 +88,9 @@ export default function PopulationEstimates({
   stateFips,
   countyFips,
 }: PopulationDashboardProps) {
-  const [demographicData, setDemographicData] = useState<{
-    [year: number]: ProcessedAcsData | null;
-  }>({});
+  const [demographicData, setDemographicData] = useState<
+    Record<number, ProcessedAcsData | null>
+  >({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedYears, setSelectedYears] = useState<number[]>([2023, 2022]);
@@ -122,7 +122,7 @@ export default function PopulationEstimates({
         throw err;
       }
     },
-    [stateFips, countyFips]
+    [stateFips, countyFips],
   );
 
   const fetchData = useCallback(async () => {
@@ -131,7 +131,7 @@ export default function PopulationEstimates({
 
     try {
       const results = await Promise.all(
-        selectedYears.map((year) => fetchDataForYear(year))
+        selectedYears.map((year) => fetchDataForYear(year)),
       );
 
       const newData = { ...demographicData };
@@ -159,12 +159,12 @@ export default function PopulationEstimates({
     isCurrency = false,
   }: {
     label: string;
-    values: { [year: number]: number | string };
+    values: Record<number, number | string>;
     isPercentage?: boolean;
     isCurrency?: boolean;
   }) => {
     const allValuesPresent = selectedYears.every(
-      (year) => values[year] !== undefined && values[year] !== "N/A"
+      (year) => values[year] !== undefined && values[year] !== "N/A",
     );
 
     return (
@@ -175,47 +175,47 @@ export default function PopulationEstimates({
             <div className="font-semibold">
               {typeof values[year] === "number"
                 ? isCurrency
-                  ? formatCurrency(values[year] as number)
+                  ? formatCurrency(values[year])
                   : isPercentage
-                  ? `${(values[year] as number).toFixed(1)}%`
-                  : formatNumber(values[year] as number)
+                    ? `${values[year].toFixed(1)}%`
+                    : formatNumber(values[year])
                 : values[year]}
             </div>
           </div>
         ))}
-        {allValuesPresent && 
-         selectedYears.length === 2 && 
-         typeof values[selectedYears[0]?? 0] === "number" && 
-         typeof values[selectedYears[1]?? 0] === "number" && (
-          <div className="col-span-2 text-right">
-            <div
-              className={`font-semibold ${
-                selectedYears[1] !== undefined &&
-                selectedYears[0] !== undefined &&
-                (values[selectedYears[1]] as number) >
-                (values[selectedYears[0]] as number)
-                  ? "text-green-600"
-                  : "text-red-600"
-              }`}
-            >
-              {isCurrency && "$"}
-              {(
-                (values[selectedYears[1] ?? 0] as number) -
-                (values[selectedYears[0] ?? 0] as number)
-              ).toFixed(isCurrency ? 0 : 1)}
-              {isPercentage && "%"}
+        {allValuesPresent &&
+          selectedYears.length === 2 &&
+          typeof values[selectedYears[0] ?? 0] === "number" &&
+          typeof values[selectedYears[1] ?? 0] === "number" && (
+            <div className="col-span-2 text-right">
+              <div
+                className={`font-semibold ${
+                  selectedYears[1] !== undefined &&
+                  selectedYears[0] !== undefined &&
+                  (values[selectedYears[1]] as number) >
+                    (values[selectedYears[0]] as number)
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {isCurrency && "$"}
+                {(
+                  (values[selectedYears[1] ?? 0] as number) -
+                  (values[selectedYears[0] ?? 0] as number)
+                ).toFixed(isCurrency ? 0 : 1)}
+                {isPercentage && "%"}
+              </div>
+              <div className="text-xs text-gray-500">
+                {(
+                  ((values[selectedYears[1] ?? 0] as number) /
+                    (values[selectedYears[0] ?? 0] as number) -
+                    1) *
+                  100
+                ).toFixed(1)}
+                %
+              </div>
             </div>
-            <div className="text-xs text-gray-500">
-              {(
-                ((values[selectedYears[1] ?? 0] as number) /
-                  (values[selectedYears[0] ?? 0] as number) -
-                  1) *
-                100
-              ).toFixed(1)}
-              %
-            </div>
-          </div>
-        )}
+          )}
       </div>
     );
   };
@@ -253,8 +253,10 @@ export default function PopulationEstimates({
             values={Object.fromEntries(
               selectedYears.map((year) => [
                 year,
-                demographicData[year] ? row.getValue(demographicData[year]!) : "N/A",
-              ])
+                demographicData[year]
+                  ? row.getValue(demographicData[year])
+                  : "N/A",
+              ]),
             )}
             isPercentage={row.isPercentage}
             isCurrency={row.isCurrency}
@@ -273,7 +275,7 @@ export default function PopulationEstimates({
   const addComparisonYear = () => {
     if (selectedYears.length < 4) {
       const newYear = availableYears.find(
-        (year) => !selectedYears.includes(year)
+        (year) => !selectedYears.includes(year),
       );
       if (newYear) {
         setSelectedYears([...selectedYears, newYear]);
@@ -306,14 +308,16 @@ export default function PopulationEstimates({
               <div key={index} className="flex items-center gap-2">
                 <select
                   value={year}
-                  onChange={(e) => handleYearSelection(index, Number(e.target.value))}
+                  onChange={(e) =>
+                    handleYearSelection(index, Number(e.target.value))
+                  }
                   className="w-32 rounded-md border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   {availableYears
                     .filter(
                       (availableYear) =>
                         !selectedYears.includes(availableYear) ||
-                        availableYear === year
+                        availableYear === year,
                     )
                     .map((availableYear) => (
                       <option key={availableYear} value={availableYear}>
@@ -401,7 +405,8 @@ export default function PopulationEstimates({
                   {
                     label: "Under 5 years",
                     getValue: (data) =>
-                      ((data.malePopulation.under5 + data.femalePopulation.under5) /
+                      ((data.malePopulation.under5 +
+                        data.femalePopulation.under5) /
                         data.totalPopulation) *
                       100,
                     isPercentage: true,
@@ -466,7 +471,8 @@ export default function PopulationEstimates({
                   {
                     label: "Female",
                     getValue: (data) =>
-                      (data.femalePopulation.total / data.totalPopulation) * 100,
+                      (data.femalePopulation.total / data.totalPopulation) *
+                      100,
                     isPercentage: true,
                   },
                 ]}
@@ -478,25 +484,30 @@ export default function PopulationEstimates({
                   {
                     label: "White alone",
                     getValue: (data) =>
-                      (data.raceAndHispanic.whiteAlone / data.totalPopulation) * 100,
+                      (data.raceAndHispanic.whiteAlone / data.totalPopulation) *
+                      100,
                     isPercentage: true,
                   },
                   {
                     label: "Black or African American alone",
                     getValue: (data) =>
-                      (data.raceAndHispanic.blackAlone / data.totalPopulation) * 100,
+                      (data.raceAndHispanic.blackAlone / data.totalPopulation) *
+                      100,
                     isPercentage: true,
                   },
                   {
                     label: "Asian alone",
                     getValue: (data) =>
-                      (data.raceAndHispanic.asianAlone / data.totalPopulation) * 100,
+                      (data.raceAndHispanic.asianAlone / data.totalPopulation) *
+                      100,
                     isPercentage: true,
                   },
                   {
                     label: "Hispanic or Latino",
                     getValue: (data) =>
-                      (data.raceAndHispanic.hispanicOrLatino / data.totalPopulation) * 100,
+                      (data.raceAndHispanic.hispanicOrLatino /
+                        data.totalPopulation) *
+                      100,
                     isPercentage: true,
                   },
                 ]}
@@ -507,7 +518,8 @@ export default function PopulationEstimates({
                 rows={[
                   {
                     label: "Median Household Income",
-                    getValue: (data) => data.incomeEmployment.medianHouseholdIncome,
+                    getValue: (data) =>
+                      data.incomeEmployment.medianHouseholdIncome,
                     isCurrency: true,
                   },
                   {
@@ -517,7 +529,8 @@ export default function PopulationEstimates({
                   },
                   {
                     label: "Below Poverty Line",
-                    getValue: (data) => data.incomeEmployment.percentBelowPoverty,
+                    getValue: (data) =>
+                      data.incomeEmployment.percentBelowPoverty,
                     isPercentage: true,
                   },
                   {
@@ -551,7 +564,8 @@ export default function PopulationEstimates({
                   {
                     label: "Bachelor's Degree or Higher",
                     getValue: (data) =>
-                      ((data.education.bachelors + data.education.mastersOrHigher) /
+                      ((data.education.bachelors +
+                        data.education.mastersOrHigher) /
                         data.totalPopulation) *
                       100,
                     isPercentage: true,

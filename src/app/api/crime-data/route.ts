@@ -316,7 +316,7 @@ export async function POST(req: NextRequest) {
       if ("data" in arrestData && arrestData.data) {
         finalArrestData = arrestData.data;
       } else if (Array.isArray(arrestData) && arrestData.length > 0) {
-        finalArrestData = arrestData[0];
+        finalArrestData = arrestData[0]!;
       } else {
         finalArrestData = arrestData as ArrestDemographicsData;
       }
@@ -411,7 +411,7 @@ function transformMonthlyDataToAnnual(
       const [monthStr, yearStr] = monthYearKey.split("-");
       if (monthStr === "01" && yearStr) {
         const year = parseInt(yearStr, 10);
-        const population = parseInt(monthlyPopulationCounts[monthYearKey], 10);
+        const population = parseInt(monthlyPopulationCounts[monthYearKey]!, 10);
         if (
           !isNaN(population) &&
           summariesByYear[year] &&
