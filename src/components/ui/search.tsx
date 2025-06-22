@@ -12,6 +12,7 @@ interface SearchProps {
   placeholder?: string;
   onSelect: (option: SearchOption) => void;
   className?: string;
+  disabled?: boolean;
 }
 
 export function Search({
@@ -19,6 +20,7 @@ export function Search({
   placeholder = "Search...",
   onSelect,
   className,
+  disabled = false,
 }: SearchProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
@@ -76,6 +78,7 @@ export function Search({
   };
 
   const handleSelect = (option: SearchOption) => {
+    if (disabled) return;
     setQuery(option.label);
     setIsOpen(false);
     setSelectedIndex(-1);
@@ -83,10 +86,12 @@ export function Search({
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (disabled) return;
     setQuery(e.target.value);
   };
 
   const handleInputFocus = () => {
+    if (disabled) return;
     if (filteredOptions.length > 0) {
       setIsOpen(true);
     }
@@ -108,10 +113,14 @@ export function Search({
         onBlur={handleInputBlur}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        disabled={disabled}
+        className={cn(
+          "w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm placeholder-gray-500 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500",
+          disabled && "cursor-not-allowed bg-gray-50 text-gray-400",
+        )}
       />
 
-      {isOpen && filteredOptions.length > 0 && (
+      {isOpen && filteredOptions.length > 0 && !disabled && (
         <ul
           ref={listRef}
           className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-300 bg-white py-1 shadow-lg"

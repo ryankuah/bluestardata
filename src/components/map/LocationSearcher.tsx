@@ -1,6 +1,7 @@
 import { Search } from "@/components/ui/search";
 import { type Feature, type AllCounties } from "@/utils/map/types";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 interface SearchOption {
   value: string;
@@ -28,6 +29,7 @@ export function LocationSearcher({
   className,
 }: LocationSearcherProps) {
   const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
 
   // Create search options for both states and counties
   const searchOptions: SearchOption[] = [
@@ -60,17 +62,33 @@ export function LocationSearcher({
       // Handle state selection - zoom to state
       onStateSelect(locationData.feature);
     } else if (locationData.type === "county" && locationData.geoId) {
-      // Handle county selection - redirect to county page
+      // Handle county selection - show loading state and redirect to county page
+      setIsNavigating(true);
       router.push(`/county/${locationData.geoId}`);
     }
   };
 
   return (
-    <Search
-      options={searchOptions}
-      placeholder="Search for a state or county..."
-      onSelect={handleLocationSelect}
-      className={className}
-    />
+    <div className="relative">
+      <Search
+        options={searchOptions}
+        placeholder={
+          isNavigating
+            ? "Navigating to county..."
+            : "Search for a state or county..."
+        }
+        onSelect={handleLocationSelect}
+        className={className}
+        disabled={isNavigating}
+      />
+      {isNavigating && (
+        <div className="absolute inset-0 flex items-center justify-center rounded-md bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center space-x-2 text-sm text-gray-600">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+            <span>Loading county data...</span>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
