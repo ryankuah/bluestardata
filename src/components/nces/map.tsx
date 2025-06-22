@@ -77,7 +77,7 @@ export default function CountyMap({
               setPopup(school);
             }}
           >
-            <IoIosSchool color="yellow" />
+            <IoIosSchool color="green" />
           </Marker>
         );
       })}

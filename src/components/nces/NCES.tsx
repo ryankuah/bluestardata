@@ -2,6 +2,7 @@ import { type Feature } from "geojson";
 import Table from "@/components/dataUI/Table";
 import Map from "./map";
 import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
+import { IoIosSchool } from "react-icons/io";
 
 export default function NCES({
   feature,
@@ -152,6 +153,23 @@ export default function NCES({
 
   return (
     <div className="flex h-full w-full flex-col">
+      <div className="mx-auto mb-6 text-center">
+        <h1 className="mb-4 text-2xl font-bold text-gray-800">
+          Private and Public School Data for {state}, {county}
+        </h1>
+        <div className="mx-auto w-max rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <div className="flex gap-6">
+            <div className="flex items-center gap-2">
+              <IoIosSchool color="red" size={16} />
+              <span className="text-sm text-gray-700">Public Schools</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <IoIosSchool color="green" size={16} />
+              <span className="text-sm text-gray-700">Private Schools</span>
+            </div>
+          </div>
+        </div>
+      </div>
       <div className="mx-auto h-max w-max">
         <Map
           feature={feature}

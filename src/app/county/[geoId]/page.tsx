@@ -274,7 +274,6 @@ export default async function Page({
         // </section>
       }
       <Suspense fallback={<p>Loading...</p>}>
-        {" "}
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
           <PopulationEstimates
             state={state}
