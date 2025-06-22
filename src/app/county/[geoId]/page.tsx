@@ -16,6 +16,7 @@ import HUDDataFetcher from "@/components/hud/HUDDataFetcher";
 import type { CountyPageData } from "@/utils/types";
 import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
 import DetailedCrimeView from "@/components/crime/detailedCrimeView";
+import { Suspense } from "react";
 
 const convertToObject = (data: CountyData[]) => {
   const out: Record<string, Record<string, Record<string, DataSet[]>>> = {};
@@ -114,7 +115,7 @@ export default async function Page({
           </h2>
           <p className="text-gray-600">
             Population:{" "}
-            {allData.acsse.demographics?.population
+            {allData.acsse?.demographics?.population
               ?.at(-1)
               ?.data.total?.toLocaleString() ?? "NO DATA"}
           </p>
@@ -124,7 +125,23 @@ export default async function Page({
               ?.at(-1)
               ?.data.combined?.toLocaleString() ?? "NO DATA"}
           </p>
-          <p className="text-gray-600">Median Income: TODO</p>
+          <p className="text-gray-600">
+            Median Income:{" "}
+            {(() => {
+              const data = fetch(
+                `https://api.census.gov/data/2023/acs/acsse?get=K201902_001E&for=county:${countyFips}&in=state:${stateFips}`,
+              )
+                .then((res) => res.json())
+                .then((data) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                  const rawValue = (data[1]?.[0] as string) ?? "NO DATA";
+                  if (rawValue === "NO DATA") return rawValue;
+                  return Number(rawValue).toLocaleString();
+                })
+                .catch(() => "NO DATA");
+              return data;
+            })()}
+          </p>
           <p className="text-gray-600">
             Population Growth Rate:{" "}
             {(() => {
@@ -152,95 +169,143 @@ export default async function Page({
               });
             })()}
           </p>
-          <p className="text-gray-600">Unemployment Rate: TODO</p>
+          <p className="text-gray-600">
+            Unemployment Rate:{" "}
+            {(() => {
+              const data = fetch(
+                `https://api.census.gov/data/2023/acs/acsse?get=K202301_003E,K202301_005E&for=county:${countyFips}&in=state:${stateFips}`,
+              )
+                .then((res) => res.json())
+                .then((data) => {
+                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+                  if (!data[1]) return "NO DATA";
+
+                  const civilianLaborForce = Number(data[1][0]);
+                  const unemployed = Number(data[1][1]);
+
+                  if (civilianLaborForce === 0) return "NO DATA";
+
+                  const unemploymentRate =
+                    (unemployed / civilianLaborForce) * 100;
+                  return unemploymentRate.toFixed(1) + "%";
+                })
+                .catch(() => "NO DATA");
+
+              return data;
+            })()}
+          </p>
         </div>
       </section>
 
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <h2 className="text-xl font-semibold text-gray-700">
-          Unemployment Data
-        </h2>
-        <Unemployment
-          state={state}
-          county={county}
-          stateFips={stateFips}
-          countyFips={countyFips}
-        />
-      </section>
-
-      <section className="flex w-full max-w-6xl flex-col gap-6 lg:flex-row">
-        <div className="flex-1 rounded-lg bg-white p-4 shadow-md">
-          <Labour
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <h2 className="text-xl font-semibold text-gray-700">
+            Unemployment Data
+          </h2>
+          <Unemployment
             state={state}
             county={county}
             stateFips={stateFips}
             countyFips={countyFips}
           />
-        </div>
-      </section>
+        </section>
+      </Suspense>
 
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <CensusDataFetcher
-          state={state}
-          county={county}
-          stateFips={stateFips}
-          countyFips={countyFips}
-        />
-      </section>
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="flex w-full max-w-6xl flex-col gap-6 lg:flex-row">
+          <div className="flex-1 rounded-lg bg-white p-4 shadow-md">
+            <Labour
+              state={state}
+              county={county}
+              stateFips={stateFips}
+              countyFips={countyFips}
+            />
+          </div>
+        </section>
+      </Suspense>
 
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <BLSDataFetcher
-          _state={state}
-          _county={county}
-          stateFips={stateFips}
-          countyFips={countyFips}
-        />
-      </section>
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <CensusDataFetcher
+            state={state}
+            county={county}
+            stateFips={stateFips}
+            countyFips={countyFips}
+          />
+        </section>
+      </Suspense>
 
-      <section className="w-full max-w-6xl rounded-lg bg-white p-0 shadow-md md:p-0">
-        {/* The DetailedCrimeView component now handles its own internal padding and title */}
-        <DetailedCrimeView stateFips={stateFips} stateName={state} />
-      </section>
+      <Suspense fallback={<p>Loading...</p>}>
+        {" "}
+        <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <BLSDataFetcher
+            _state={state}
+            _county={county}
+            stateFips={stateFips}
+            countyFips={countyFips}
+          />
+        </section>
+      </Suspense>
+
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="w-full max-w-6xl rounded-lg bg-white p-0 shadow-md md:p-0">
+          {/* The DetailedCrimeView component now handles its own internal padding and title */}
+          <DetailedCrimeView stateFips={stateFips} stateName={state} />
+        </section>
+      </Suspense>
       {
         // <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
         //   <FRED state={state} county={county} />
         // </section>
       }
-      <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <PopulationEstimates
-          state={state}
-          county={county}
-          stateFips={stateFips}
-          countyFips={countyFips}
-        />
-      </section>
-      <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <ACSSE allData={allData} />
-      </section>
-      <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <NCES
-          feature={countyBorder}
-          token={env.MAPBOX_TOKEN}
-          state={state}
-          county={county}
-          stateFips={stateFips}
-          countyFips={countyFips}
-          publicData={
-            Object.values(allData.publicNCES) as unknown as PublicNCESData[]
-          }
-          privateData={
-            Object.values(allData.privateNCES) as unknown as PrivateNCESData[]
-          }
-        />
-      </section>
-      <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-        <HUDDataFetcher
-          state={state}
-          county={county}
-          stateFips={stateFips}
-          countyFips={countyFips}
-        />
-      </section>
+      <Suspense fallback={<p>Loading...</p>}>
+        {" "}
+        <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <PopulationEstimates
+            state={state}
+            county={county}
+            stateFips={stateFips}
+            countyFips={countyFips}
+          />
+        </section>
+      </Suspense>
+
+      <Suspense fallback={<p>Loading...</p>}>
+        {" "}
+        <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <ACSSE allData={allData} />
+        </section>
+      </Suspense>
+
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <NCES
+            feature={countyBorder}
+            token={env.MAPBOX_TOKEN}
+            state={state}
+            county={county}
+            stateFips={stateFips}
+            countyFips={countyFips}
+            publicData={
+              Object.values(allData.publicNCES) as unknown as PublicNCESData[]
+            }
+            privateData={
+              Object.values(allData.privateNCES) as unknown as PrivateNCESData[]
+            }
+          />
+        </section>
+      </Suspense>
+
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="h-full w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <HUDDataFetcher
+            state={state}
+            county={county}
+            stateFips={stateFips}
+            countyFips={countyFips}
+          />
+        </section>
+      </Suspense>
     </div>
   );
 }

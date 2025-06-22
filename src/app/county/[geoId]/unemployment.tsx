@@ -21,12 +21,12 @@ export default async function Unemployment({
   };
 
   await Promise.all(
-    Array.from({ length: 2023 - 2014 + 1 }, async (_, index) => {
+    Array.from({ length: 2024 - 2014 }, async (_, index) => {
       const i = 2014 + index;
 
       const [tempState, tempCountry, tempCounty] = (await Promise.all([
         fetch(
-          `https://api.census.gov/data/${i}/acs/acsse?get=NAME,K202301_002E,K202301_005E&for=state:${stateFips}`,
+          `https://api.census.gov/data/${i}/acs/acsse?get=NAME,K202301_003E,K202301_005E&for=state:${stateFips}`,
         )
           .then((res) => res.json())
           .catch(() => {
@@ -35,7 +35,7 @@ export default async function Unemployment({
           }),
 
         fetch(
-          `https://api.census.gov/data/${i}/acs/acsse?get=NAME,K202301_002E,K202301_005E&for=us`,
+          `https://api.census.gov/data/${i}/acs/acsse?get=NAME,K202301_003E,K202301_005E&for=us`,
         )
           .then((res) => res.json())
           .catch(() => {
@@ -44,7 +44,7 @@ export default async function Unemployment({
           }),
 
         fetch(
-          `https://api.census.gov/data/${i}/acs/acsse?get=NAME,K202301_002E,K202301_005E&for=county:${countyFips}&in=state:${stateFips}`,
+          `https://api.census.gov/data/${i}/acs/acsse?get=NAME,K202301_003E,K202301_005E&for=county:${countyFips}&in=state:${stateFips}`,
         )
           .then((res) => res.json())
           .catch(() => {
@@ -53,17 +53,15 @@ export default async function Unemployment({
           }),
       ])) as [result, result, result];
 
-      unemployments.state.push(
-        (tempState?.[1]?.[2] ?? 0) / (tempState?.[1]?.[1] ?? 1) || null,
-      );
-      unemployments.country.push(
-        (tempCountry?.[1]?.[2] ?? 0) / (tempCountry?.[1]?.[1] ?? 1) || null,
-      );
-      unemployments.county.push(
-        (tempCounty?.[1]?.[2] ?? 0) / (tempCounty?.[1]?.[1] ?? 1) || null,
-      );
-      unemployments.label.push(i.toString());
+      unemployments.state[index] =
+        (tempState?.[1]?.[2] ?? 0) / (tempState?.[1]?.[1] ?? 1) || null;
+      unemployments.country[index] =
+        (tempCountry?.[1]?.[2] ?? 0) / (tempCountry?.[1]?.[1] ?? 1) || null;
+      unemployments.county[index] =
+        (tempCounty?.[1]?.[2] ?? 0) / (tempCounty?.[1]?.[1] ?? 1) || null;
+      unemployments.label[index] = i.toString();
     }),
   );
+  console.log(unemployments);
   return <Chart unemployments={unemployments} />;
 }
