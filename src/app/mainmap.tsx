@@ -15,6 +15,7 @@ import {
 import { useState, useCallback, useRef } from "react";
 import { bbox } from "@turf/bbox";
 import { useRouter } from "next/navigation";
+import { LocationSearcher } from "@/components/map/LocationSearcher";
 
 export function MainMap({
   token,
@@ -66,16 +67,16 @@ export function MainMap({
     console.log(e.features![0]!.properties!.geoId);
   };
 
-  const stateClick = (e: MapMouseEvent) => {
-    const feature = e.features![0];
-    if (!feature) return;
-
+  const handleStateSelect = (feature: Feature) => {
+    // Same logic as stateClick but triggered by search
     const stateCounty = allCounties.find(
       (county) => county.fipsCode === feature.properties?.fipsCode,
     );
     if (!stateCounty) return;
 
-    const [minLng, minLat, maxLng, maxLat] = bbox(feature.geometry);
+    const [minLng, minLat, maxLng, maxLat] = bbox(
+      feature.geometry as unknown as GeoJSON.Geometry,
+    );
 
     mapRef.current?.fitBounds(
       [
@@ -109,37 +110,55 @@ export function MainMap({
         },
       })) as unknown as Feature[],
     });
+
+    setCurrentLevel("county");
+  };
+
+  const stateClick = (e: MapMouseEvent) => {
+    const feature = e.features![0];
+    if (!feature) return;
+    handleStateSelect(feature as unknown as Feature);
   };
 
   return (
-    <Map
-      ref={mapRef}
-      initialViewState={{
-        latitude: 40,
-        longitude: -100,
-        zoom: 3,
-      }}
-      mapStyle="mapbox://styles/mapbox/light-v9"
-      mapboxAccessToken={token}
-      style={{ width: "100vw", height: "100vh" }}
-      interactiveLayerIds={["data"]}
-      onMouseMove={onHover}
-      onClick={(e: MapMouseEvent) => {
-        onClick(e);
-      }}
-    >
-      <Source type="geojson" data={data}>
-        <Layer {...dataLayer} />
-        <Layer {...borderLayer} />
-      </Source>
-      {hoverInfo && (
-        <div
-          className="absolute m-2 h-max w-max bg-gray-500 p-1"
-          style={{ left: hoverInfo.x, top: hoverInfo.y }}
-        >
-          <div>{hoverInfo.feature.properties.name}</div>
-        </div>
-      )}
-    </Map>
+    <div className="relative">
+      <div className="absolute left-4 top-4 z-10 w-80">
+        <LocationSearcher
+          states={state.features}
+          allCounties={allCounties}
+          onStateSelect={handleStateSelect}
+          className="shadow-lg"
+        />
+      </div>
+      <Map
+        ref={mapRef}
+        initialViewState={{
+          latitude: 40,
+          longitude: -100,
+          zoom: 3,
+        }}
+        mapStyle="mapbox://styles/mapbox/light-v9"
+        mapboxAccessToken={token}
+        style={{ width: "100vw", height: "100vh" }}
+        interactiveLayerIds={["data"]}
+        onMouseMove={onHover}
+        onClick={(e: MapMouseEvent) => {
+          onClick(e);
+        }}
+      >
+        <Source type="geojson" data={data}>
+          <Layer {...dataLayer} />
+          <Layer {...borderLayer} />
+        </Source>
+        {hoverInfo && (
+          <div
+            className="absolute m-2 h-max w-max bg-gray-500 p-1"
+            style={{ left: hoverInfo.x, top: hoverInfo.y }}
+          >
+            <div>{hoverInfo.feature.properties.name}</div>
+          </div>
+        )}
+      </Map>
+    </div>
   );
 }

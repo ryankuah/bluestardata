@@ -105,97 +105,112 @@ export default async function Page({
         </h1>
       </header>
 
-      <section className="flex w-full max-w-6xl flex-col gap-6 rounded-lg bg-white p-4 shadow-md lg:flex-row">
-        <div className="h-80 flex-1 overflow-hidden rounded-lg">
-          <CountyMap feature={countyBorder} token={env.MAPBOX_TOKEN} />
-        </div>
-        <div className="flex-1 space-y-4">
-          <h2 className="text-xl font-semibold text-gray-700">
-            Basic Statistics
-          </h2>
-          <p className="text-gray-600">
-            Population:{" "}
-            {allData.acsse?.demographics?.population
-              ?.at(-1)
-              ?.data.total?.toLocaleString() ?? "NO DATA"}
-          </p>
-          <p className="text-gray-600">
-            Median Age:{" "}
-            {allData.acsse.age?.medianAge
-              ?.at(-1)
-              ?.data.combined?.toLocaleString() ?? "NO DATA"}
-          </p>
-          <p className="text-gray-600">
-            Median Income:{" "}
-            {(() => {
-              const data = fetch(
-                `https://api.census.gov/data/2023/acs/acsse?get=K201902_001E&for=county:${countyFips}&in=state:${stateFips}`,
-              )
-                .then((res) => res.json())
-                .then((data) => {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                  const rawValue = (data[1]?.[0] as string) ?? "NO DATA";
-                  if (rawValue === "NO DATA") return rawValue;
-                  return Number(rawValue).toLocaleString();
-                })
-                .catch(() => "NO DATA");
-              return data;
-            })()}
-          </p>
-          <p className="text-gray-600">
-            Population Growth Rate:{" "}
-            {(() => {
-              const populationData = allData.acsse.demographics?.population;
+      <Suspense fallback={<p>Loading...</p>}>
+        {" "}
+        <section className="flex w-full max-w-6xl flex-col gap-6 rounded-lg bg-white p-4 shadow-md lg:flex-row">
+          <div className="h-80 flex-1 overflow-hidden rounded-lg">
+            <CountyMap feature={countyBorder} token={env.MAPBOX_TOKEN} />
+          </div>
+          <div className="flex-1 space-y-4">
+            <h2 className="text-xl font-semibold text-gray-700">
+              Basic Statistics
+            </h2>
+            <p className="text-gray-600">
+              Population:{" "}
+              {allData.acsse?.demographics?.population
+                ?.at(-1)
+                ?.data.total?.toLocaleString() ?? "NO DATA"}
+            </p>
+            <p className="text-gray-600">
+              Median Age:{" "}
+              {allData.acsse.age?.medianAge
+                ?.at(-1)
+                ?.data.combined?.toLocaleString() ?? "NO DATA"}
+            </p>
+            <p className="text-gray-600">
+              Median Income:{" "}
+              {(() => {
+                const data = fetch(
+                  `https://api.census.gov/data/2023/acs/acsse?get=K201902_001E&for=county:${countyFips}&in=state:${stateFips}`,
+                )
+                  .then((res) => res.json())
+                  .then((data: unknown) => {
+                    if (
+                      !Array.isArray(data) ||
+                      !Array.isArray(data[1]) ||
+                      !data[1][0]
+                    ) {
+                      return "NO DATA";
+                    }
+                    const rawValue = data[1][0] as string;
+                    if (rawValue === "NO DATA") return rawValue;
+                    return Number(rawValue).toLocaleString();
+                  })
+                  .catch(() => "NO DATA");
+                return data;
+              })()}
+            </p>
+            <p className="text-gray-600">
+              Population Growth Rate:{" "}
+              {(() => {
+                const populationData = allData.acsse.demographics?.population;
 
-              if (!populationData || populationData.length < 2) {
-                return "NO DATA";
-              }
+                if (!populationData || populationData.length < 2) {
+                  return "NO DATA";
+                }
 
-              const lastValue = populationData.at(-1)?.data?.total;
-              const prevValue = populationData.at(-2)?.data?.total;
+                const lastValue = populationData.at(-1)?.data?.total;
+                const prevValue = populationData.at(-2)?.data?.total;
 
-              if (
-                typeof lastValue !== "number" ||
-                typeof prevValue !== "number" ||
-                prevValue === 0
-              ) {
-                return "NO DATA";
-              }
-              const growthRate = lastValue / prevValue - 1;
-              return growthRate.toLocaleString(undefined, {
-                style: "percent",
-                minimumFractionDigits: 1,
-                maximumFractionDigits: 2,
-              });
-            })()}
-          </p>
-          <p className="text-gray-600">
-            Unemployment Rate:{" "}
-            {(() => {
-              const data = fetch(
-                `https://api.census.gov/data/2023/acs/acsse?get=K202301_003E,K202301_005E&for=county:${countyFips}&in=state:${stateFips}`,
-              )
-                .then((res) => res.json())
-                .then((data) => {
-                  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-                  if (!data[1]) return "NO DATA";
+                if (
+                  typeof lastValue !== "number" ||
+                  typeof prevValue !== "number" ||
+                  prevValue === 0
+                ) {
+                  return "NO DATA";
+                }
+                const growthRate = lastValue / prevValue - 1;
+                return growthRate.toLocaleString(undefined, {
+                  style: "percent",
+                  minimumFractionDigits: 1,
+                  maximumFractionDigits: 2,
+                });
+              })()}
+            </p>
+            <p className="text-gray-600">
+              Unemployment Rate:{" "}
+              {(() => {
+                const data = fetch(
+                  `https://api.census.gov/data/2023/acs/acsse?get=K202301_003E,K202301_005E&for=county:${countyFips}&in=state:${stateFips}`,
+                )
+                  .then((res) => res.json())
+                  .then((data: unknown) => {
+                    if (
+                      !Array.isArray(data) ||
+                      !Array.isArray(data[1]) ||
+                      !data[1][0] ||
+                      !data[1][1]
+                    ) {
+                      return "NO DATA";
+                    }
 
-                  const civilianLaborForce = Number(data[1][0]);
-                  const unemployed = Number(data[1][1]);
+                    const civilianLaborForce = Number(data[1][0]);
+                    const unemployed = Number(data[1][1]);
 
-                  if (civilianLaborForce === 0) return "NO DATA";
+                    if (civilianLaborForce === 0) return "NO DATA";
 
-                  const unemploymentRate =
-                    (unemployed / civilianLaborForce) * 100;
-                  return unemploymentRate.toFixed(1) + "%";
-                })
-                .catch(() => "NO DATA");
+                    const unemploymentRate =
+                      (unemployed / civilianLaborForce) * 100;
+                    return unemploymentRate.toFixed(1) + "%";
+                  })
+                  .catch(() => "NO DATA");
 
-              return data;
-            })()}
-          </p>
-        </div>
-      </section>
+                return data;
+              })()}
+            </p>
+          </div>
+        </section>
+      </Suspense>
 
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
