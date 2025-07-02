@@ -222,11 +222,12 @@ export default function HUDDataFetcher({
 
         <div>
           <h3 className="mb-2 text-lg font-medium text-gray-700">
-            Small Area Fair Market Rents (MSTP)
+            Multifamily Tax Subsidy (MSTP) Income Limits
           </h3>
           <p className="mb-4 text-sm text-gray-600">
-            ZIP level rent ceilings per bedroom size, used to set ZIP specific
-            voucher limits.
+            MTSP Income Limits are used to determine qualification levels as
+            well as set maximum rental rates for projects funded with tax
+            credits.
           </p>
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">

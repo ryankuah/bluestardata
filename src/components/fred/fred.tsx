@@ -1,20 +1,26 @@
-import {
-  fetchSeries,
-  getStateFredId,
-  getCountyFredId,
-} from "@/utils/fred/utils";
+import { fetchSeries } from "@/utils/fred/utils";
 import { FREDData } from "./fredData";
 import Image from "next/image";
 
 export default async function FRED({
   state,
-  geoId,
+  county,
+  stateId,
+  countyId,
 }: {
   state: string;
-  geoId: string;
+  county: string;
+  stateId: number | null;
+  countyId: number | null;
 }) {
-  const stateFredId = await getStateFredId(state);
-  const countyFredId = await getCountyFredId(geoId);
+  console.log(`FRED Component Debug - State: ${state}, County: ${county}`);
+  console.log(`State FRED ID: ${stateId}, County FRED ID: ${countyId}`);
+
+  const stateFredId = stateId;
+  const countyFredId = countyId;
+
+  console.log(`State FRED ID available: ${!!stateFredId}`);
+  console.log(`County FRED ID available: ${!!countyFredId}`);
 
   if (!stateFredId && !countyFredId) {
     return (
@@ -36,6 +42,9 @@ export default async function FRED({
     countyFredId ? fetchSeries(countyFredId) : Promise.resolve([]),
   ]);
 
+  console.log(`State series fetched: ${allStateSeries.length}`);
+  console.log(`County series fetched: ${allCountySeries.length}`);
+
   const stateCodes: [string, string][] = allStateSeries.map((series) => [
     series.id,
     series.title,
@@ -44,6 +53,9 @@ export default async function FRED({
     series.id,
     series.title,
   ]);
+
+  console.log(`State codes prepared: ${stateCodes.length}`);
+  console.log(`County codes prepared: ${countyCodes.length}`);
 
   return (
     <div className="flex flex-col">
@@ -60,10 +72,20 @@ export default async function FRED({
         )}
         {countyFredId && (
           <div className={stateFredId ? "w-1/2" : "w-full"}>
-            <p className="mb-2 font-bold text-gray-700">County Data</p>
-            <FREDData observations={[]} code={countyCodes} place={geoId} />
+            <p className="mb-2 font-bold text-gray-700">
+              County Data - {county}
+            </p>
+            <FREDData observations={[]} code={countyCodes} place={county} />
           </div>
         )}
+      </div>
+
+      {/* Debug info */}
+      <div className="mt-4 text-xs text-gray-500">
+        Debug: State ID: {stateFredId ?? "None"}, County ID:{" "}
+        {countyFredId ?? "None"}| Rendering: {stateFredId ? "State" : ""}
+        {stateFredId && countyFredId ? " + " : ""}
+        {countyFredId ? "County" : ""}
       </div>
     </div>
   );

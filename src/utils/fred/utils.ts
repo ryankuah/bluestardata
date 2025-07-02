@@ -111,3 +111,49 @@ export async function getCountyFredId(geoId: string): Promise<number | null> {
     return null;
   }
 }
+
+export async function exportFredCountiesToCSV() {
+  const csvData: string[] = ["County Name,FRED ID"];
+
+  try {
+    const fredIDs = await fetchCategories(27281);
+
+    for (const stateCategory of fredIDs) {
+      console.log(`Processing state: ${stateCategory.name}`);
+
+      const stateFreds = await fetchCategories(stateCategory.id);
+      const countyID = stateFreds.find(
+        (selection) =>
+          selection.name === "Counties" ||
+          selection.name === "Parishes" ||
+          selection.name === "Census Areas and Boroughs",
+      )?.id;
+
+      if (!countyID) {
+        console.log(`No counties found for ${stateCategory.name}`);
+        continue;
+      }
+
+      const counties = await fetchCategories(countyID);
+      console.log(`Found ${counties.length} counties in ${stateCategory.name}`);
+
+      for (const county of counties) {
+        csvData.push(`"${county.name}",${county.id}`);
+      }
+    }
+
+    const csvContent = csvData.join("\n");
+
+    // Write to file (you can run this in Node.js environment)
+    const fs = await import("fs").then((m) => m.default);
+    fs.writeFileSync("fred_counties.csv", csvContent, "utf8");
+
+    console.log(
+      `Successfully exported ${csvData.length - 1} counties to fred_counties.csv`,
+    );
+    return csvContent;
+  } catch (error) {
+    console.error("Error exporting FRED counties:", error);
+    throw error;
+  }
+}

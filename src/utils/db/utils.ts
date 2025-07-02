@@ -57,39 +57,19 @@ export async function addStateData(
   source: string,
   dataSet: DataSet | string | number,
 ) {
-  //Check if data already exists
-  const id = (
-    await db.query.stateDatas.findFirst({
-      where: (stateDatas, { eq }) =>
-        eq(stateDatas.stateId, stateFips) &&
-        eq(stateDatas.name, name) &&
-        eq(stateDatas.category, category),
+  //Insert
+  await db
+    .insert(stateDatas)
+    .values({
+      stateId: stateFips,
+      category,
+      name,
+      source,
+      dataSet: JSON.stringify(dataSet),
     })
-  )?.id;
-  //Update
-  if (id) {
-    await db
-      .update(stateDatas)
-      .set({
-        dataSet: JSON.stringify(dataSet),
-      })
-      .where(eq(stateDatas.id, id));
-  } else {
-    //Insert
-    await db
-      .insert(stateDatas)
-      .values({
-        stateId: stateFips,
-        category,
-        name,
-        source,
-        dataSet: JSON.stringify(dataSet),
-      })
-      .onConflictDoNothing()
-      .catch((error) => {
-        console.error(error);
-      });
-  }
+    .catch((error) => {
+      console.error(error);
+    });
 }
 
 export async function getCountyData(

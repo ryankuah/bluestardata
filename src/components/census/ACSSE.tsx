@@ -116,10 +116,13 @@ function DemographicSection({
     name: string;
     data: { label: string; value: string | number }[];
   }>({ name: "OHNO", data: [{ label: "ERROR", value: "OHNO" }] });
+
   useEffect(() => {
-    if (!dataSet?.[indexProcess]) {
+    if (!dataSet?.[indexProcess]?.data) {
       console.log("No Data");
+      return;
     }
+
     const data = Object.entries(dataSet[indexProcess]!.data).map(
       ([key, value]) => {
         const stringValue =

@@ -77,6 +77,27 @@ export default async function Page({
 
   const countyData = dbObj?.data as CountyData[];
 
+  // Get FRED IDs from the database
+  const fredCountyData = countyData.find(
+    (data) => data.source === "FRED" && data.name === "Fred ID",
+  );
+  const stateFredData = dbObj?.state?.data?.find(
+    (data) => data.source === "FRED" && data.name === "Fred ID",
+  );
+
+  // Debug logging for FRED data
+  console.log(`🔍 County Page Debug - ${county}, ${state}`);
+  console.log(`County data entries:`, countyData.length);
+  console.log(
+    `FRED county data found:`,
+    fredCountyData ? `Yes (${JSON.stringify(fredCountyData.dataSet)})` : "No",
+  );
+  console.log(`State data entries:`, dbObj?.state?.data?.length || 0);
+  console.log(
+    `FRED state data found:`,
+    stateFredData ? `Yes (${JSON.stringify(stateFredData.dataSet)})` : "No",
+  );
+
   const allData: CountyPageData = {
     county: {
       name: county,
@@ -86,6 +107,18 @@ export default async function Page({
     state: {
       name: state,
       fipsCode: stateFips,
+    },
+    fred: {
+      stateId:
+        typeof stateFredData?.dataSet === "number"
+          ? stateFredData.dataSet
+          : null,
+      countyId:
+        typeof fredCountyData?.dataSet === "number"
+          ? fredCountyData.dataSet
+          : null,
+      stateName: state,
+      countyName: county,
     },
     acsse: convertToObject(
       countyData.filter((data) => data.source === "acsse"),
@@ -107,7 +140,6 @@ export default async function Page({
       </header>
 
       <Suspense fallback={<p>Loading...</p>}>
-        {" "}
         <section className="flex w-full max-w-6xl flex-col gap-6 rounded-lg bg-white p-4 shadow-md lg:flex-row">
           <div className="h-80 flex-1 overflow-hidden rounded-lg">
             <CountyMap feature={countyBorder} token={env.MAPBOX_TOKEN} />
@@ -271,7 +303,12 @@ export default async function Page({
       </Suspense>
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-          <FRED state={state} geoId={geoId} />
+          <FRED
+            state={state}
+            county={county}
+            stateId={allData.fred.stateId}
+            countyId={allData.fred.countyId}
+          />
         </section>
       </Suspense>
       <Suspense fallback={<p>Loading...</p>}>
