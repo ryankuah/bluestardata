@@ -184,38 +184,117 @@ export default function PopulationEstimates({
           </div>
         ))}
         {allValuesPresent &&
-          selectedYears.length === 2 &&
-          typeof values[selectedYears[0] ?? 0] === "number" &&
-          typeof values[selectedYears[1] ?? 0] === "number" && (
-            <div className="col-span-2 text-right">
-              <div
-                className={`font-semibold ${
-                  selectedYears[1] !== undefined &&
-                  selectedYears[0] !== undefined &&
-                  (values[selectedYears[1]] as number) >
-                    (values[selectedYears[0]] as number)
+          (() => {
+            const numericYears = selectedYears
+              .map((year) => ({
+                year,
+                value:
+                  typeof values[year] === "number"
+                    ? (values[year] as number)
+                    : null,
+              }))
+              .filter((d) => d.value !== null) as {
+              year: number;
+              value: number;
+            }[];
+
+            if (
+              numericYears.length === 2 &&
+              numericYears[0] &&
+              numericYears[1]
+            ) {
+              const diff = numericYears[1].value - numericYears[0].value;
+              const pctChange = ((diff / numericYears[0].value) * 100).toFixed(
+                1,
+              );
+              return (
+                <div className="col-span-2 text-right">
+                  <div
+                    className={`font-semibold ${diff > 0 ? "text-green-600" : "text-red-600"}`}
+                  >
+                    {isCurrency ? "$" : ""}
+                    {isPercentage
+                      ? `${diff.toFixed(1)}%`
+                      : diff.toFixed(isCurrency ? 0 : 1)}
+                  </div>
+                  <div className="text-xs text-gray-500">{pctChange}%</div>
+                </div>
+              );
+            }
+
+            if (numericYears.length === 3) {
+              const sorted = numericYears.sort((a, b) => a.year - b.year);
+              const diff = (sorted[2]?.value ?? 0) - (sorted[0]?.value ?? 0);
+              const pctChange =
+                (sorted[0]?.value ?? 0) !== 0
+                  ? ((diff / (sorted[0]?.value ?? 1)) * 100).toFixed(1)
+                  : "N/A";
+              return (
+                <div className="col-span-2 text-right">
+                  <div
+                    className={`font-semibold ${diff > 0 ? "text-green-600" : "text-red-600"}`}
+                  >
+                    {isCurrency ? "$" : ""}
+                    {isPercentage
+                      ? `${diff.toFixed(1)}%`
+                      : diff.toFixed(isCurrency ? 0 : 1)}
+                  </div>
+                  <div className="text-xs text-gray-500">{pctChange}%</div>
+                </div>
+              );
+            }
+
+            if (numericYears.length === 4) {
+              const sortedByValue = [...numericYears].sort(
+                (a, b) => a.value - b.value,
+              );
+
+              if (
+                sortedByValue[0] &&
+                sortedByValue[1] &&
+                sortedByValue[2] &&
+                sortedByValue[3]
+              ) {
+                const A_val = sortedByValue[1].value - sortedByValue[0].value;
+                const A_pct =
+                  sortedByValue[0].value !== 0
+                    ? (A_val / sortedByValue[0].value) * 100
+                    : 0;
+
+                const B_val = sortedByValue[3].value - sortedByValue[2].value;
+                const B_pct =
+                  sortedByValue[2].value !== 0
+                    ? (B_val / sortedByValue[2].value) * 100
+                    : 0;
+
+                const AB_pct = A_pct - B_pct;
+
+                const getColorClass = (val: number) =>
+                  val > 0
                     ? "text-green-600"
-                    : "text-red-600"
-                }`}
-              >
-                {isCurrency && "$"}
-                {(
-                  (values[selectedYears[1] ?? 0] as number) -
-                  (values[selectedYears[0] ?? 0] as number)
-                ).toFixed(isCurrency ? 0 : 1)}
-                {isPercentage && "%"}
-              </div>
-              <div className="text-xs text-gray-500">
-                {(
-                  ((values[selectedYears[1] ?? 0] as number) /
-                    (values[selectedYears[0] ?? 0] as number) -
-                    1) *
-                  100
-                ).toFixed(1)}
-                %
-              </div>
-            </div>
-          )}
+                    : val < 0
+                      ? "text-red-600"
+                      : "text-gray-600";
+
+                return (
+                  <div className="col-span-2 space-y-1 text-right text-xs">
+                    <div className={`font-semibold ${getColorClass(A_pct)}`}>
+                      A: ({sortedByValue[1].year} - {sortedByValue[0].year}) ={" "}
+                      {A_pct.toFixed(1)}%
+                    </div>
+                    <div className={`font-semibold ${getColorClass(B_pct)}`}>
+                      B: ({sortedByValue[3].year} - {sortedByValue[2].year}) ={" "}
+                      {B_pct.toFixed(1)}%
+                    </div>
+                    <div className={`font-semibold ${getColorClass(AB_pct)}`}>
+                      A - B = {AB_pct.toFixed(1)}%
+                    </div>
+                  </div>
+                );
+              }
+            }
+            return null;
+          })()}
       </div>
     );
   };
