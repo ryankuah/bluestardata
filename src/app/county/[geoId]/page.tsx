@@ -17,6 +17,7 @@ import type { CountyPageData } from "@/utils/types";
 import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
 import DetailedCrimeView from "@/components/crime/detailedCrimeView";
 import FRED from "@/components/fred/fred";
+import HealthcareBLS from "@/components/bls/HealthcareBLS";
 import { Suspense } from "react";
 
 const convertToObject = (data: CountyData[]) => {
@@ -297,7 +298,6 @@ export default async function Page({
 
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-0 shadow-md md:p-0">
-          {/* The DetailedCrimeView component now handles its own internal padding and title */}
           <DetailedCrimeView stateFips={stateFips} stateName={state} />
         </section>
       </Suspense>
@@ -353,6 +353,17 @@ export default async function Page({
           <HUDDataFetcher
             state={state}
             county={county}
+            stateFips={stateFips}
+            countyFips={countyFips}
+          />
+        </section>
+      </Suspense>
+
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <HealthcareBLS
+            _state={state}
+            _county={county}
             stateFips={stateFips}
             countyFips={countyFips}
           />

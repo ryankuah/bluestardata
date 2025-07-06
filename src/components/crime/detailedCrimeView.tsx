@@ -71,14 +71,13 @@ interface DetailedCrimeViewProps {
 const currentYear = new Date().getFullYear();
 const yearOptions: number[] = Array.from(
   { length: 30 },
-  (_, i) => currentYear - i,
+  (_, i) => 2023 - i,
 ).sort((a, b) => a - b);
 
 // FBI offense codes mapping
 const OFFENSE_CODES: Record<string, string> = {
   all: "All Offenses",
   "11": "Murder and Nonnegligent Homicide",
-  "23": "Rape",
   "30": "Robbery",
   "60": "Burglary",
   "210": "Stolen Property",
@@ -103,25 +102,6 @@ const availableCrimeTypes: {
   targetKey: string;
   category: string;
 }[] = [
-  // Original summarized offense options
-  {
-    value: "V",
-    label: "All Violent Crimes (Annual Summary)",
-    targetKey: "violent_crime",
-    category: "summary",
-  },
-  {
-    value: "HOM",
-    label: "Homicide (Annual Summary)",
-    targetKey: "homicide",
-    category: "summary",
-  },
-  {
-    value: "P",
-    label: "All Property Crimes (Annual Summary)",
-    targetKey: "property_crime",
-    category: "summary",
-  },
   // Arrest Demographics options
   {
     value: "ARREST_DEMOGRAPHICS_OVERALL",
@@ -1096,15 +1076,6 @@ export default function DetailedCrimeView({
               fontSize: "14px",
             }}
           >
-            <optgroup label="Summary Reports">
-              {availableCrimeTypes
-                .filter((ct) => ct.category === "summary")
-                .map((crimeType) => (
-                  <option key={crimeType.value} value={crimeType.value}>
-                    {crimeType.label}
-                  </option>
-                ))}
-            </optgroup>
             <optgroup label="Demographics">
               {availableCrimeTypes
                 .filter((ct) => ct.category === "demographics")
