@@ -17,8 +17,8 @@ import type { CountyPageData } from "@/utils/types";
 import type { PublicNCESData, PrivateNCESData } from "@/utils/nces/types";
 import DetailedCrimeView from "@/components/crime/detailedCrimeView";
 import FRED from "@/components/fred/fred";
-import HealthcareBLS from "@/components/bls/HealthcareBLS";
 import { Suspense } from "react";
+import MajorHealthcareProviders from "@/components/healthcare/MajorHealthcareProviders";
 
 const convertToObject = (data: CountyData[]) => {
   const out: Record<string, Record<string, Record<string, DataSet[]>>> = {};
@@ -246,7 +246,7 @@ export default async function Page({
         </section>
       </Suspense>
 
-      <Suspense fallback={<p>Loading...</p>}>
+      {/* <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
           <h2 className="text-xl font-semibold text-gray-700">
             Unemployment Data
@@ -357,16 +357,10 @@ export default async function Page({
             countyFips={countyFips}
           />
         </section>
-      </Suspense>
-
+      </Suspense> */}
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-          <HealthcareBLS
-            _state={state}
-            _county={county}
-            stateFips={stateFips}
-            countyFips={countyFips}
-          />
+          <MajorHealthcareProviders state={stateFips} county={countyFips} />
         </section>
       </Suspense>
     </div>
