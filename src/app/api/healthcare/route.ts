@@ -58,6 +58,68 @@ const stateFipsToAbbr: Record<string, string> = {
   "72": "PR",
 };
 
+// Simple in-memory cache for geocoding results
+const geocodeCache = new Map<string, { lat: number; lng: number } | null>();
+
+// Rate limiting for Nominatim (1 request per second)
+let lastGeocodingRequest = 0;
+const GEOCODING_DELAY = 1100; // 1.1 seconds to be safe
+
+async function geocodeAddress(
+  address: string,
+): Promise<{ lat: number; lng: number } | null> {
+  // Check cache first
+  if (geocodeCache.has(address)) {
+    return geocodeCache.get(address) || null;
+  }
+
+  try {
+    // Rate limiting
+    const now = Date.now();
+    const timeSinceLastRequest = now - lastGeocodingRequest;
+    if (timeSinceLastRequest < GEOCODING_DELAY) {
+      await new Promise((resolve) =>
+        setTimeout(resolve, GEOCODING_DELAY - timeSinceLastRequest),
+      );
+    }
+    lastGeocodingRequest = Date.now();
+
+    const encodedAddress = encodeURIComponent(address);
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodedAddress}&limit=1&countrycodes=us`,
+      {
+        headers: {
+          "User-Agent": "HealthcareMapApp/1.0", // Required by Nominatim
+        },
+      },
+    );
+
+    if (!response.ok) {
+      console.warn(`Geocoding failed for address: ${address}`);
+      geocodeCache.set(address, null);
+      return null;
+    }
+
+    const data = await response.json();
+
+    if (data && data.length > 0) {
+      const coords = {
+        lat: parseFloat(data[0].lat),
+        lng: parseFloat(data[0].lon),
+      };
+      geocodeCache.set(address, coords);
+      return coords;
+    } else {
+      geocodeCache.set(address, null);
+      return null;
+    }
+  } catch (error) {
+    console.error(`Error geocoding address ${address}:`, error);
+    geocodeCache.set(address, null);
+    return null;
+  }
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const stateFips = searchParams.get("state");
@@ -98,102 +160,123 @@ export async function GET(req: NextRequest) {
     )
     .map((entry) => entry.zip);
 
-  if (matchedZips.length === 0) {
-    console.warn(
-      `⚠️ No ZIP codes found for state=${stateAbbr} and county=${countyFips}`,
-    );
-    return NextResponse.json(
-      {
-        error: "No ZIP codes found for this county/state",
-        hospitals: filteredHospitals,
-        hospitalCount: filteredHospitals.length,
-      },
-      { status: 404 },
-    );
-  }
-
-  console.log(`🔧 Found ${matchedZips.length} ZIP codes:`, matchedZips);
-
   try {
-    const cmsRequests = matchedZips.map((zip) =>
-      fetch(
-        `https://npiregistry.cms.hhs.gov/api/?version=2.1&state=${stateAbbr}&postal_code=${zip}&enumeration_type=NPI-2&limit=50`,
-      ).then((res) => res.json()),
-    );
+    // Get providers (keeping original logic for the table component)
+    let allProviders: Array<{
+      number: string;
+      name: string;
+      address: string;
+      primaryTaxonomy: string;
+      otherTaxonomies: string;
+    }> = [];
 
-    const cmsResults = await Promise.all(cmsRequests);
+    if (matchedZips.length > 0) {
+      console.log(`🔧 Found ${matchedZips.length} ZIP codes:`, matchedZips);
 
-    const allProviders = cmsResults
-      .flatMap((result) => result.results || [])
-      .filter(
-        (provider, index, self) =>
-          index === self.findIndex((p) => p.number === provider.number),
-      )
-      .map((provider) => {
-        const addressParts = [
-          provider.addresses?.find(
-            (addr: {
-              address_purpose?: string;
-              address_1?: string;
-              city?: string;
-              state?: string;
-              postal_code?: string;
-            }) => addr.address_purpose === "LOCATION",
-          )?.address_1,
-          provider.addresses?.find(
-            (addr: {
-              address_purpose?: string;
-              address_1?: string;
-              city?: string;
-              state?: string;
-              postal_code?: string;
-            }) => addr.address_purpose === "LOCATION",
-          )?.city,
-          provider.addresses?.find(
-            (addr: {
-              address_purpose?: string;
-              address_1?: string;
-              city?: string;
-              state?: string;
-              postal_code?: string;
-            }) => addr.address_purpose === "LOCATION",
-          )?.state,
-          provider.addresses?.find(
-            (addr: {
-              address_purpose?: string;
-              address_1?: string;
-              city?: string;
-              state?: string;
-              postal_code?: string;
-            }) => addr.address_purpose === "LOCATION",
-          )?.postal_code,
-        ].filter(Boolean);
+      const cmsRequests = matchedZips.map((zip) =>
+        fetch(
+          `https://npiregistry.cms.hhs.gov/api/?version=2.1&state=${stateAbbr}&postal_code=${zip}&enumeration_type=NPI-2&limit=50`,
+        ).then((res) => res.json()),
+      );
 
-        return {
-          number: provider.number,
-          name: provider.basic.organization_name,
-          address: addressParts.join(", ") || "N/A",
-          primaryTaxonomy:
-            provider.taxonomies?.find((t: any) => t.primary)?.desc ?? "N/A",
-          otherTaxonomies:
-            provider.taxonomies?.map((t: any) => t.desc).join(", ") ?? "N/A",
-        };
-      });
+      const cmsResults = await Promise.all(cmsRequests);
+
+      allProviders = cmsResults
+        .flatMap((result) => result.results || [])
+        .filter(
+          (provider, index, self) =>
+            index === self.findIndex((p) => p.number === provider.number),
+        )
+        .map((provider) => {
+          const addressParts = [
+            provider.addresses?.find(
+              (addr: {
+                address_purpose?: string;
+                address_1?: string;
+                city?: string;
+                state?: string;
+                postal_code?: string;
+              }) => addr.address_purpose === "LOCATION",
+            )?.address_1,
+            provider.addresses?.find(
+              (addr: {
+                address_purpose?: string;
+                address_1?: string;
+                city?: string;
+                state?: string;
+                postal_code?: string;
+              }) => addr.address_purpose === "LOCATION",
+            )?.city,
+            provider.addresses?.find(
+              (addr: {
+                address_purpose?: string;
+                address_1?: string;
+                city?: string;
+                state?: string;
+                postal_code?: string;
+              }) => addr.address_purpose === "LOCATION",
+            )?.state,
+            provider.addresses?.find(
+              (addr: {
+                address_purpose?: string;
+                address_1?: string;
+                city?: string;
+                state?: string;
+                postal_code?: string;
+              }) => addr.address_purpose === "LOCATION",
+            )?.postal_code,
+          ].filter(Boolean);
+
+          return {
+            number: provider.number,
+            name: provider.basic.organization_name,
+            address: addressParts.join(", ") || "N/A",
+            primaryTaxonomy:
+              provider.taxonomies?.find((t: any) => t.primary)?.desc ?? "N/A",
+            otherTaxonomies:
+              provider.taxonomies?.map((t: any) => t.desc).join(", ") ?? "N/A",
+          };
+        });
+    }
 
     console.log(`✅ Found ${allProviders.length} unique providers.`);
 
+    // Geocode hospitals only
+    console.log("🌍 Starting geocoding for hospitals...");
+    const hospitalsWithCoords = [];
+    for (const hospital of filteredHospitals) {
+      if (hospital.address && hospital.city && hospital.state) {
+        const fullAddress = `${hospital.address}, ${hospital.city}, ${hospital.state}`;
+        const coords = await geocodeAddress(fullAddress);
+        hospitalsWithCoords.push({
+          ...hospital,
+          latitude: coords?.lat || null,
+          longitude: coords?.lng || null,
+        });
+      } else {
+        hospitalsWithCoords.push({
+          ...hospital,
+          latitude: null,
+          longitude: null,
+        });
+      }
+    }
+
+    console.log(`✅ Hospital geocoding complete!`);
+
     return NextResponse.json({
-      providers: allProviders,
+      providers: allProviders, // Keep for table component
       providerCount: allProviders.length,
-      hospitals: filteredHospitals,
-      hospitalCount: filteredHospitals.length,
-      total: allProviders.length + filteredHospitals.length,
+      hospitals: hospitalsWithCoords,
+      hospitalCount: hospitalsWithCoords.length,
+      total: allProviders.length + hospitalsWithCoords.length,
     });
   } catch (error) {
-    console.error("❌ CMS API fetch failed:", error);
+    console.error("❌ API processing failed:", error);
     return NextResponse.json(
       {
-        error: "Failed to fetch from CMS NPI API",
+        error: "Failed to process healthcare data",
+        providers: [],
         hospitals: filteredHospitals,
         hospitalCount: filteredHospitals.length,
       },

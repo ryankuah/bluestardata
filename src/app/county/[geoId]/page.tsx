@@ -19,6 +19,8 @@ import DetailedCrimeView from "@/components/crime/detailedCrimeView";
 import FRED from "@/components/fred/fred";
 import { Suspense } from "react";
 import MajorHealthcareProviders from "@/components/healthcare/MajorHealthcareProviders";
+import HealthcareMap from "@/components/healthcare/HealthcareMap";
+import HealthcareEmploymentAnalysis from "@/components/healthcare/HealtcareEmploymentAnalysis";
 
 const convertToObject = (data: CountyData[]) => {
   const out: Record<string, Record<string, Record<string, DataSet[]>>> = {};
@@ -125,7 +127,7 @@ export default async function Page({
             </p>
             <p className="text-gray-600">
               Median Age:{" "}
-              {allData.acsse.age?.medianAge
+              {allData.acsse?.age?.medianAge
                 ?.at(-1)
                 ?.data.combined?.toLocaleString() ?? "NO DATA"}
             </p>
@@ -155,7 +157,7 @@ export default async function Page({
             <p className="text-gray-600">
               Population Growth Rate:{" "}
               {(() => {
-                const populationData = allData.acsse.demographics?.population;
+                const populationData = allData.acsse?.demographics?.population;
 
                 if (!populationData || populationData.length < 2) {
                   return "NO DATA";
@@ -324,6 +326,27 @@ export default async function Page({
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
           <MajorHealthcareProviders state={stateFips} county={countyFips} />
+        </section>
+      </Suspense>
+
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <HealthcareMap
+            feature={countyBorder}
+            token={env.MAPBOX_TOKEN}
+            state={stateFips}
+            county={countyFips}
+          />
+        </section>
+      </Suspense>
+      <Suspense fallback={<p>Loading...</p>}>
+        <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
+          <HealthcareEmploymentAnalysis
+            stateFips={stateFips}
+            countyFips={countyFips}
+            countyName={county}
+            stateName={state}
+          />
         </section>
       </Suspense>
     </div>
