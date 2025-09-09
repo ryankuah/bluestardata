@@ -248,7 +248,7 @@ export default async function Page({
         </section>
       </Suspense>
 
-      {/* <Suspense fallback={<p>Loading...</p>}>
+      <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
           <h2 className="text-xl font-semibold text-gray-700">
             Unemployment Data
@@ -359,7 +359,7 @@ export default async function Page({
             countyFips={countyFips}
           />
         </section>
-      </Suspense> */}
+      </Suspense>
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
           <MajorHealthcareProviders state={stateFips} county={countyFips} />

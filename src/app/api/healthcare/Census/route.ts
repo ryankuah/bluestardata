@@ -33,7 +33,12 @@ export async function GET(req: NextRequest) {
       fetch(
         `${CENSUS_API_URL}?get=NAICS2017,NAICS2017_LABEL,ESTAB,EMP,PAYANN&for=county:${countyFips}&in=state:${stateFips}&NAICS2017=${naics}`,
       )
-        .then((res) => res.json())
+        .then(async (res) => {
+          const json = (await res.json()) as unknown;
+          return Array.isArray(json) && Array.isArray(json[0])
+            ? (json as string[][])
+            : null;
+        })
         .catch(() => null),
     );
 
@@ -41,17 +46,22 @@ export async function GET(req: NextRequest) {
 
     const healthcareData = responses
       .filter(
-        (response) =>
-          response && Array.isArray(response) && response.length > 1,
+        (response): response is string[][] =>
+          Boolean(response) && Array.isArray(response) && response.length > 1,
       )
       .map((response) => {
-        const row = response[1]; // Skip header row
+        const row = response[1]!; // Skip header row
+        const industryCode = (row[0] ?? "").toString();
+        const industryName = (row[1] ?? "").toString();
+        const establishments = Number(row[2] ?? 0) || 0;
+        const employees = Number(row[3] ?? 0) || 0;
+        const annualPayroll = Number(row[4] ?? 0) || 0; // in thousands
         return {
-          industryCode: row[0],
-          industryName: row[1],
-          establishments: Number(row[2]) || 0,
-          employees: Number(row[3]) || 0,
-          annualPayroll: Number(row[4]) || 0, // in thousands
+          industryCode,
+          industryName,
+          establishments,
+          employees,
+          annualPayroll,
         };
       })
       .filter((item) => item.employees > 0); // Only include industries with employees

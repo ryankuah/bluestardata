@@ -99,18 +99,30 @@ export default function MajorHealthcareProviders({
           throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.json();
-        setProviders(data.providers || []);
-        setHospitals(data.hospitals || []);
-      } catch (err: any) {
+        const data = (await response.json()) as unknown;
+        const providers =
+          data &&
+          typeof data === "object" &&
+          Array.isArray((data as { providers?: unknown }).providers)
+            ? (data as { providers: Provider[] }).providers
+            : [];
+        const hospitals =
+          data &&
+          typeof data === "object" &&
+          Array.isArray((data as { hospitals?: unknown }).hospitals)
+            ? (data as { hospitals: Hospital[] }).hospitals
+            : [];
+        setProviders(providers);
+        setHospitals(hospitals);
+      } catch (err) {
         console.error("Error fetching data:", err);
-        setError(err.message || "Failed to load data.");
+        setError(err instanceof Error ? err.message : "Failed to load data.");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
+    void fetchData();
   }, [state, county]);
 
   const typeOptions = useMemo(() => {

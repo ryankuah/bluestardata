@@ -66,8 +66,8 @@ export default function HealthcareMap({
   const [error, setError] = useState<string | null>(null);
 
   const handleMapLoad = useCallback((evt: MapboxEvent) => {
-    const map = evt.target;
-    const currentZoom = map.getZoom();
+    const map = evt?.target;
+    const currentZoom = typeof map?.getZoom === "function" ? map.getZoom() : 0;
     setMinZoomLevel(currentZoom);
   }, []);
 
@@ -85,20 +85,33 @@ export default function HealthcareMap({
           throw new Error(`Error: ${response.status} ${response.statusText}`);
         }
 
-        const data = await response.json();
-        setHealthcareData({
-          providers: data.providers || [],
-          hospitals: data.hospitals || [],
-        });
-      } catch (err: any) {
+        const data = (await response.json()) as unknown;
+        const providers =
+          data &&
+          typeof data === "object" &&
+          Array.isArray((data as { providers?: unknown }).providers)
+            ? (data as { providers: Provider[] }).providers
+            : [];
+        const hospitals =
+          data &&
+          typeof data === "object" &&
+          Array.isArray((data as { hospitals?: unknown }).hospitals)
+            ? (data as { hospitals: Hospital[] }).hospitals
+            : [];
+        setHealthcareData({ providers, hospitals });
+      } catch (err) {
         console.error("Error fetching healthcare data:", err);
-        setError(err.message || "Failed to load healthcare data.");
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Failed to load healthcare data.",
+        );
       } finally {
         setLoading(false);
       }
     };
 
-    fetchHealthcareData();
+    void fetchHealthcareData();
   }, [state, county]);
 
   const getProviderIcon = (primaryTaxonomy: string) => {
@@ -125,7 +138,7 @@ export default function HealthcareMap({
     }
   };
 
-  const getHospitalColor = (trauma: string, beds: number) => {
+  const getHospitalColor = (trauma: string, _beds: number) => {
     // Color by trauma level, size by beds
     switch (trauma) {
       case "LEVEL I":
@@ -181,7 +194,7 @@ export default function HealthcareMap({
               Hospitals (
               {
                 healthcareData.hospitals.filter(
-                  (h) => h.latitude && h.longitude,
+                  (h) => Boolean(h.latitude) && Boolean(h.longitude),
                 ).length
               }
               )
@@ -195,8 +208,8 @@ export default function HealthcareMap({
                 healthcareData.providers.filter(
                   (p) =>
                     p.primaryTaxonomy.toLowerCase().includes("clinic") &&
-                    p.latitude &&
-                    p.longitude,
+                    Boolean(p.latitude) &&
+                    Boolean(p.longitude),
                 ).length
               }
               )
@@ -210,8 +223,8 @@ export default function HealthcareMap({
                 healthcareData.providers.filter(
                   (p) =>
                     !p.primaryTaxonomy.toLowerCase().includes("clinic") &&
-                    p.latitude &&
-                    p.longitude,
+                    Boolean(p.latitude) &&
+                    Boolean(p.longitude),
                 ).length
               }
               )
@@ -241,7 +254,8 @@ export default function HealthcareMap({
         >
           {/* Render Hospital Markers */}
           {healthcareData.hospitals.map((hospital, index) => {
-            if (!hospital.latitude || !hospital.longitude) return null;
+            if (hospital.latitude == null || hospital.longitude == null)
+              return null;
 
             return (
               <Marker
@@ -265,7 +279,8 @@ export default function HealthcareMap({
 
           {/* Render Provider Markers */}
           {healthcareData.providers.map((provider, index) => {
-            if (!provider.latitude || !provider.longitude) return null;
+            if (provider.latitude == null || provider.longitude == null)
+              return null;
 
             const IconComponent = getProviderIcon(provider.primaryTaxonomy);
 

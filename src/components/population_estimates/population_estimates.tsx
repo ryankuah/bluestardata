@@ -190,13 +190,12 @@ export default function PopulationEstimates({
                 year,
                 value:
                   typeof values[year] === "number"
-                    ? (values[year] as number)
+                    ? Number(values[year])
                     : null,
               }))
-              .filter((d) => d.value !== null) as {
-              year: number;
-              value: number;
-            }[];
+              .filter(
+                (d): d is { year: number; value: number } => d.value !== null,
+              );
 
             if (
               numericYears.length === 2 &&
@@ -223,7 +222,7 @@ export default function PopulationEstimates({
             }
 
             if (numericYears.length === 3) {
-              const sorted = numericYears.sort((a, b) => a.year - b.year);
+              const sorted = [...numericYears].sort((a, b) => a.year - b.year);
               const diff = (sorted[2]?.value ?? 0) - (sorted[0]?.value ?? 0);
               const pctChange =
                 (sorted[0]?.value ?? 0) !== 0

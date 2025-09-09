@@ -70,7 +70,7 @@ async function geocodeAddress(
 ): Promise<{ lat: number; lng: number } | null> {
   // Check cache first
   if (geocodeCache.has(address)) {
-    return geocodeCache.get(address) || null;
+    return geocodeCache.get(address) ?? null;
   }
 
   try {
@@ -100,12 +100,16 @@ async function geocodeAddress(
       return null;
     }
 
-    const data = await response.json();
+    const data = (await response.json()) as unknown;
 
-    if (data && data.length > 0) {
+    if (Array.isArray(data) && data.length > 0) {
       const coords = {
-        lat: parseFloat(data[0].lat),
-        lng: parseFloat(data[0].lon),
+        lat: parseFloat(
+          String((data as Array<{ lat: string; lon: string }>)[0]!.lat),
+        ),
+        lng: parseFloat(
+          String((data as Array<{ lat: string; lon: string }>)[0]!.lon),
+        ),
       };
       geocodeCache.set(address, coords);
       return coords;
@@ -152,7 +156,13 @@ export async function GET(req: NextRequest) {
     `🏥 Found ${filteredHospitals.length} hospitals for this county.`,
   );
 
-  const matchedZips = zipCountyMap
+  const matchedZips = (
+    zipCountyMap as Array<{
+      state: string;
+      county: string;
+      zip: string;
+    }>
+  )
     .filter(
       (entry) =>
         entry.state.toUpperCase() === stateAbbr.toUpperCase() &&
@@ -176,13 +186,29 @@ export async function GET(req: NextRequest) {
       const cmsRequests = matchedZips.map((zip) =>
         fetch(
           `https://npiregistry.cms.hhs.gov/api/?version=2.1&state=${stateAbbr}&postal_code=${zip}&enumeration_type=NPI-2&limit=50`,
-        ).then((res) => res.json()),
+        ).then(async (res) => (await res.json()) as unknown),
       );
 
-      const cmsResults = await Promise.all(cmsRequests);
+      const cmsResults = (await Promise.all(cmsRequests)) as Array<{
+        results?: Array<{
+          number: string;
+          basic: { organization_name: string };
+          addresses?: Array<{
+            address_purpose?: string;
+            address_1?: string;
+            city?: string;
+            state?: string;
+            postal_code?: string;
+          }>;
+          taxonomies?: Array<{
+            primary?: boolean;
+            desc?: string;
+          }>;
+        }>;
+      } | null>;
 
       allProviders = cmsResults
-        .flatMap((result) => result.results || [])
+        .flatMap((result) => result?.results ?? [])
         .filter(
           (provider, index, self) =>
             index === self.findIndex((p) => p.number === provider.number),
@@ -190,51 +216,27 @@ export async function GET(req: NextRequest) {
         .map((provider) => {
           const addressParts = [
             provider.addresses?.find(
-              (addr: {
-                address_purpose?: string;
-                address_1?: string;
-                city?: string;
-                state?: string;
-                postal_code?: string;
-              }) => addr.address_purpose === "LOCATION",
+              (addr) => addr.address_purpose === "LOCATION",
             )?.address_1,
             provider.addresses?.find(
-              (addr: {
-                address_purpose?: string;
-                address_1?: string;
-                city?: string;
-                state?: string;
-                postal_code?: string;
-              }) => addr.address_purpose === "LOCATION",
+              (addr) => addr.address_purpose === "LOCATION",
             )?.city,
             provider.addresses?.find(
-              (addr: {
-                address_purpose?: string;
-                address_1?: string;
-                city?: string;
-                state?: string;
-                postal_code?: string;
-              }) => addr.address_purpose === "LOCATION",
+              (addr) => addr.address_purpose === "LOCATION",
             )?.state,
             provider.addresses?.find(
-              (addr: {
-                address_purpose?: string;
-                address_1?: string;
-                city?: string;
-                state?: string;
-                postal_code?: string;
-              }) => addr.address_purpose === "LOCATION",
+              (addr) => addr.address_purpose === "LOCATION",
             )?.postal_code,
           ].filter(Boolean);
 
           return {
             number: provider.number,
             name: provider.basic.organization_name,
-            address: addressParts.join(", ") || "N/A",
+            address: addressParts.join(", ") ?? "N/A",
             primaryTaxonomy:
-              provider.taxonomies?.find((t: any) => t.primary)?.desc ?? "N/A",
+              provider.taxonomies?.find((t) => t.primary)?.desc ?? "N/A",
             otherTaxonomies:
-              provider.taxonomies?.map((t: any) => t.desc).join(", ") ?? "N/A",
+              provider.taxonomies?.map((t) => t.desc).join(", ") ?? "N/A",
           };
         });
     }
@@ -250,8 +252,8 @@ export async function GET(req: NextRequest) {
         const coords = await geocodeAddress(fullAddress);
         hospitalsWithCoords.push({
           ...hospital,
-          latitude: coords?.lat || null,
-          longitude: coords?.lng || null,
+          latitude: coords?.lat ?? null,
+          longitude: coords?.lng ?? null,
         });
       } else {
         hospitalsWithCoords.push({

@@ -52,19 +52,31 @@ async function fetchHealthcareEmploymentData(
     `/api/healthcare/BLS?state=${stateFips}&county=${countyFips}`,
   );
 
-  const censusData = await censusResponse.json();
-  const blsData = await blsResponse.json();
+  const censusData = (await censusResponse.json()) as unknown;
+  const blsData = (await blsResponse.json()) as unknown;
 
   return processHealthcareData(censusData, blsData);
 }
 
+type CensusRow = {
+  industryCode: string;
+  industryName?: string;
+  establishments?: number;
+  employees?: number;
+  annualPayroll?: number; // thousands
+};
+
 function processHealthcareData(
-  censusData: any,
-  blsData: any,
+  censusData: unknown,
+  _blsData: unknown,
 ): HealthcareEmploymentData {
+  const data: CensusRow[] = Array.isArray(censusData)
+    ? (censusData as CensusRow[])
+    : [];
   // Extract hospital-specific data (NAICS 622)
   const hospitalData =
-    censusData.find((item: any) => item.industryCode === "622") || {};
+    data.find((item) => item.industryCode === "622") ??
+    ({ employees: 0, establishments: 0, annualPayroll: 0 } as CensusRow);
 
   // Calculate healthcare totals
   const healthcareSectors = [
@@ -79,14 +91,16 @@ function processHealthcareData(
 
   const processedSectors = healthcareSectors
     .map((sector) => {
-      const data =
-        censusData.find((item: any) => item.industryCode === sector.naics) ||
-        {};
+      const row =
+        data.find((item) => item.industryCode === sector.naics) ??
+        ({ employees: 0, annualPayroll: 0 } as CensusRow);
+      const employees = Number(row.employees ?? 0);
+      const avgPay =
+        employees > 0 ? (Number(row.annualPayroll ?? 0) * 1000) / employees : 0;
       return {
         sector: sector.name,
-        employees: data.employees || 0,
-        avgPay:
-          data.employees > 0 ? (data.annualPayroll * 1000) / data.employees : 0,
+        employees,
+        avgPay,
         color: sector.color,
       };
     })
@@ -105,32 +119,32 @@ function processHealthcareData(
   // Mock employment trends (you would get this from BLS time series data)
   const employmentTrends = Array.from({ length: 5 }, (_, i) => ({
     year: (2019 + i).toString(),
-    hospitalEmployees: (hospitalData.employees || 0) * (0.95 + i * 0.02),
+    hospitalEmployees: (hospitalData.employees ?? 0) * (0.95 + i * 0.02),
     totalHealthcare: totalHealthcareEmployees * (0.93 + i * 0.025),
   }));
 
   return {
-    hospitalEmployees: hospitalData.employees || 0,
-    hospitalEstablishments: hospitalData.establishments || 0,
-    hospitalWages: hospitalData.annualPayroll || 0,
+    hospitalEmployees: hospitalData.employees ?? 0,
+    hospitalEstablishments: hospitalData.establishments ?? 0,
+    hospitalWages: hospitalData.annualPayroll ?? 0,
     hospitalAvgPay:
-      hospitalData.employees > 0
-        ? (hospitalData.annualPayroll * 1000) / hospitalData.employees
+      (hospitalData.employees ?? 0) > 0
+        ? ((hospitalData.annualPayroll ?? 0) * 1000) /
+          (hospitalData.employees ?? 1)
         : 0,
     totalHealthcareEmployees,
     totalEmployees:
-      censusData.find((item: any) => item.industryCode === "00")?.employees ||
-      0,
+      data.find((item) => item.industryCode === "00")?.employees ?? 0,
     healthcarePayroll,
     totalPayroll:
-      censusData.find((item: any) => item.industryCode === "00")
-        ?.annualPayroll * 1000 || 0,
+      (data.find((item) => item.industryCode === "00")?.annualPayroll ?? 0) *
+      1000,
     employmentTrends,
     healthcareSectors: processedSectors,
   };
 }
 
-export default function ({
+export default function HealthcareEmploymentAnalysis({
   stateFips,
   countyFips,
   countyName,
@@ -146,9 +160,11 @@ export default function ({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchHealthcareEmploymentData(stateFips, countyFips)
+    void fetchHealthcareEmploymentData(stateFips, countyFips)
       .then(setData)
-      .catch((err) => setError(err.message))
+      .catch((err: unknown) =>
+        setError(err instanceof Error ? err.message : "Failed to load data"),
+      )
       .finally(() => setLoading(false));
   }, [stateFips, countyFips]);
 

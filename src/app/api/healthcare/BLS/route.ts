@@ -1,7 +1,27 @@
 // /api/bls-healthcare/route.ts
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 const BLS_API_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/";
+
+interface BLSDataPoint {
+  year: string;
+  period: string;
+  value: string;
+  footnotes?: Array<
+    { code?: string; text?: string | null } | Record<string, never>
+  >;
+}
+
+interface BLSSeries {
+  seriesID: string;
+  data: BLSDataPoint[];
+}
+
+interface BLSResponse {
+  Results?: {
+    series?: BLSSeries[];
+  };
+}
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -58,16 +78,16 @@ export async function GET(req: NextRequest) {
       throw new Error("Failed to fetch BLS data");
     }
 
-    const data = await response.json();
+    const data: BLSResponse = (await response.json()) as BLSResponse;
 
     if (!data.Results?.series?.length) {
       return NextResponse.json({ series: [] });
     }
 
     // Process and return the time series data
-    const processedData = data.Results.series.map((series: any) => ({
+    const processedData = (data.Results.series ?? []).map((series) => ({
       seriesID: series.seriesID,
-      data: series.data || [],
+      data: series.data ?? [],
     }));
 
     return NextResponse.json({ series: processedData });
