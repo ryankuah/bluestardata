@@ -242,46 +242,17 @@ export async function GET(req: NextRequest) {
     }
 
     console.log(`✅ Found ${allProviders.length} unique providers.`);
-
-    // Geocode hospitals only
-    console.log("🌍 Starting geocoding for hospitals...");
-    const hospitalsWithCoords = [];
-    for (const hospital of filteredHospitals) {
-      if (hospital.address && hospital.city && hospital.state) {
-        const fullAddress = `${hospital.address}, ${hospital.city}, ${hospital.state}`;
-        const coords = await geocodeAddress(fullAddress);
-        hospitalsWithCoords.push({
-          ...hospital,
-          latitude: coords?.lat ?? null,
-          longitude: coords?.lng ?? null,
-        });
-      } else {
-        hospitalsWithCoords.push({
-          ...hospital,
-          latitude: null,
-          longitude: null,
-        });
-      }
-    }
-
-    console.log(`✅ Hospital geocoding complete!`);
-
     return NextResponse.json({
-      providers: allProviders, // Keep for table component
+      providers: allProviders,
       providerCount: allProviders.length,
-      hospitals: hospitalsWithCoords,
-      hospitalCount: hospitalsWithCoords.length,
-      total: allProviders.length + hospitalsWithCoords.length,
+      hospitals: filteredHospitals, // No coordinates yet
+      hospitalCount: filteredHospitals.length,
+      total: allProviders.length + filteredHospitals.length,
     });
   } catch (error) {
-    console.error("❌ API processing failed:", error);
+    console.error("Error:", error);
     return NextResponse.json(
-      {
-        error: "Failed to process healthcare data",
-        providers: [],
-        hospitals: filteredHospitals,
-        hospitalCount: filteredHospitals.length,
-      },
+      { error: "Internal server error" },
       { status: 500 },
     );
   }

@@ -1,7 +1,7 @@
 // src/components/crime/DetailedCrimeView.tsx
 "use client";
 
-import React, { useState, useCallback } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -160,6 +160,60 @@ export default function DetailedCrimeView({
         category: "offense_trend",
       },
   );
+  // Add this useEffect right after your state declarations
+  useEffect(() => {
+    const fetchInitialData = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const yearsToFetch = Array.from(
+          { length: toYear - fromYear + 1 },
+          (_, i) => fromYear + i,
+        );
+
+        const response = await fetch("/api/crime-data", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            stateFips,
+            years: yearsToFetch,
+            crimeTypeSlug: "ARREST_DEMOGRAPHICS_OVERALL",
+            targetKey: "arrest_demographics",
+            category: "demographics",
+          }),
+        });
+
+        const responseData = (await response.json()) as AppCrimeApiResponse;
+
+        if (response.ok) {
+          setCrimeData(responseData);
+
+          if (
+            responseData.dataType === "arrest_demographics_total" &&
+            !responseData.arrestDemographics
+          ) {
+            setError(
+              `No Arrest Demographics data found for ${stateName} between ${fromYear} and ${toYear}.`,
+            );
+          }
+        } else {
+          throw new Error(
+            responseData.message ?? `API request failed: ${response.status}`,
+          );
+        }
+      } catch (err) {
+        console.error("Error fetching initial crime data:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to load initial data.",
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInitialData();
+  }, [stateFips, fromYear, toYear, stateName]); // Auto-fetch when these change
 
   const handleFetchData = useCallback(async () => {
     if (!fromYear || !toYear || !selectedCrimeConfig.value) {

@@ -133,6 +133,66 @@ export default async function Page({
       .filter((data) => data.source === "NCES_PRIVATE")
       .map((row) => row.dataSet),
   };
+  function getBaseUrl() {
+    // Browser should use relative URL
+    if (typeof window !== "undefined") return "";
+
+    // Server-side rendering
+    if (process.env.VERCEL_URL) {
+      return `https://${process.env.VERCEL_URL}`;
+    }
+
+    // Development
+    return `http://localhost:${process.env.PORT || 3001}`;
+  }
+
+  // Then in your Page function:
+  const baseUrl = getBaseUrl();
+
+  const healthcareData = await fetch(
+    `${baseUrl}/api/healthcare?state=${stateFips}&county=${countyFips}`,
+    {
+      cache: "force-cache",
+      next: { revalidate: 86400 },
+    },
+  )
+    .then((r) => {
+      console.log("Healthcare API status:", r.status);
+      if (!r.ok) throw new Error(`Failed: ${r.status}`);
+      return r.json();
+    })
+    .catch((err) => {
+      console.error("Healthcare fetch error:", err);
+      return { providers: [], hospitals: [] };
+    });
+
+  const censusHealthcare = await fetch(
+    `${baseUrl}/api/healthcare/census-healthcare?state=${stateFips}&county=${countyFips}`,
+    { cache: "force-cache", next: { revalidate: 86400 } },
+  )
+    .then((r) => {
+      console.log("Census Healthcare API status:", r.status);
+      if (!r.ok) throw new Error(`Failed: ${r.status}`);
+      return r.json();
+    })
+    .catch((err) => {
+      console.error("Census Healthcare fetch error:", err);
+      return [];
+    });
+
+  const blsHealthcare = await fetch(
+    `${baseUrl}/api/healthcare/bls-healthcare?state=${stateFips}&county=${countyFips}`,
+    { cache: "force-cache", next: { revalidate: 86400 } },
+  )
+    .then((r) => {
+      console.log("BLS Healthcare API status:", r.status);
+      if (!r.ok) throw new Error(`Failed: ${r.status}`);
+      return r.json();
+    })
+    .catch((err) => {
+      console.error("BLS Healthcare fetch error:", err);
+      return { series: [] };
+    });
 
   return (
     <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
@@ -362,7 +422,10 @@ export default async function Page({
       </Suspense>
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
-          <MajorHealthcareProviders state={stateFips} county={countyFips} />
+          <MajorHealthcareProviders
+            providers={healthcareData.providers}
+            hospitals={healthcareData.hospitals}
+          />
         </section>
       </Suspense>
 
@@ -371,16 +434,19 @@ export default async function Page({
           <HealthcareMap
             feature={countyBorder}
             token={env.MAPBOX_TOKEN}
-            state={stateFips}
-            county={countyFips}
+            providers={healthcareData.providers}
+            hospitals={healthcareData.hospitals}
+            stateFips={stateFips}
+            countyFips={countyFips}
           />
         </section>
       </Suspense>
+
       <Suspense fallback={<p>Loading...</p>}>
         <section className="w-full max-w-6xl rounded-lg bg-white p-4 shadow-md">
           <HealthcareEmploymentAnalysis
-            stateFips={stateFips}
-            countyFips={countyFips}
+            censusData={censusHealthcare}
+            blsData={blsHealthcare}
             countyName={county}
             stateName={state}
           />

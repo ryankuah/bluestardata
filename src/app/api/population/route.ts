@@ -1,9 +1,12 @@
 import { type NextRequest } from "next/server";
 import { env } from "@/env";
-import { View } from "lucide-react";
+import { db } from "@/server/db";
+import { acsPopulationData } from "@/server/db/schema";
+import { and, eq } from "drizzle-orm";
 
 const ACS_API_URL = "https://api.census.gov/data/";
 const CENSUS_API_KEY = env.CENSUS_API_KEY;
+const CACHE_DURATION_DAYS = 365; // ACS data updates annually
 
 if (!CENSUS_API_KEY) {
   throw new Error("Census API Key is not set in the environment variables.");
@@ -402,7 +405,6 @@ function processAcsData(dataGroups: string[][][]): ProcessedAcsData {
     incomeEmployment,
   };
 }
-
 export async function POST(req: NextRequest): Promise<Response> {
   try {
     const body = (await req.json()) as PostRequestBody;
@@ -419,6 +421,49 @@ export async function POST(req: NextRequest): Promise<Response> {
         status: 400,
       });
     }
+
+    // CHECK DATABASE FIRST
+    console.log(
+      `🔍 Checking cache for ACS data: ${stateFips}-${countyFips || "*"}, year ${year}`,
+    );
+
+    const whereConditions = countyFips
+      ? and(
+          eq(acsPopulationData.stateFips, stateFips),
+          eq(acsPopulationData.countyFips, countyFips),
+          eq(acsPopulationData.year, year),
+        )
+      : and(
+          eq(acsPopulationData.stateFips, stateFips),
+          eq(acsPopulationData.year, year),
+        );
+
+    const cached = await db
+      .select()
+      .from(acsPopulationData)
+      .where(whereConditions)
+      .limit(1);
+
+    if (cached.length > 0) {
+      const record = cached[0]!;
+      const fetchedAt = record.fetchedAt;
+      const daysSinceFetch = fetchedAt
+        ? (Date.now() - fetchedAt.getTime()) / (1000 * 60 * 60 * 24)
+        : Infinity;
+
+      if (daysSinceFetch < CACHE_DURATION_DAYS) {
+        console.log(
+          `✅ Using cached ACS data (${Math.floor(daysSinceFetch)} days old)`,
+        );
+        return new Response(JSON.stringify(record.data), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+    }
+
+    // NOT CACHED OR STALE - Fetch from Census API
+    console.log(`❌ No fresh ACS data. Fetching from Census API...`);
 
     // Fetch each variable group separately
     const dataGroups = await Promise.all([
@@ -479,6 +524,22 @@ export async function POST(req: NextRequest): Promise<Response> {
     ]);
 
     const processedData = processAcsData(dataGroups);
+
+    // STORE IN DATABASE
+    console.log(`💾 Storing ACS data in database...`);
+
+    // Delete old data for this combination
+    await db.delete(acsPopulationData).where(whereConditions);
+
+    // Insert new data
+    await db.insert(acsPopulationData).values({
+      stateFips,
+      countyFips: countyFips || null,
+      year,
+      data: processedData,
+    });
+
+    console.log(`✅ Stored ACS data in database`);
 
     return new Response(JSON.stringify(processedData), {
       status: 200,

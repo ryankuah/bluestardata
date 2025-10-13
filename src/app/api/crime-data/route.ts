@@ -1,12 +1,17 @@
 // src/app/api/crime-data/route.ts
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { db } from "@/server/db";
+import { crimeData } from "@/server/db/schema";
+import { and, eq } from "drizzle-orm";
 
 const API_KEY =
   process.env.FBI_API_KEY ?? "iiHnOKfno2Mgkt5AynpvPpUQTEyxE77jo1RU8PIv";
 const API_BASE_URL = "https://api.usa.gov/crime/fbi/cde";
-
+const CACHE_DURATION_DAYS = 180; // FBI data updates slowly
 // For summarized crime types (annual data)
+
+// Removed duplicate POST function implementation to resolve redeclaration and duplicate errors.
 interface SummarizedYearData {
   year: number;
   population?: number;
@@ -242,7 +247,6 @@ async function fetchOffenseYearlyTrend(
     throw error;
   }
 }
-
 export async function POST(req: NextRequest) {
   try {
     const body = (await req.json()) as {
@@ -256,10 +260,7 @@ export async function POST(req: NextRequest) {
 
     if (!stateFips || !years.length || !crimeTypeSlug) {
       return NextResponse.json(
-        {
-          error:
-            "Missing required parameters: stateFips, years, and crimeTypeSlug are required.",
-        },
+        { error: "Missing required parameters" },
         { status: 400 },
       );
     }
@@ -272,23 +273,51 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // CHECK DATABASE FIRST
+    const cached = await db
+      .select()
+      .from(crimeData)
+      .where(
+        and(
+          eq(crimeData.stateFips, stateFips),
+          eq(crimeData.crimeTypeSlug, crimeTypeSlug),
+        ),
+      )
+      .limit(1);
+
+    if (cached.length > 0) {
+      const record = cached[0]!;
+      const fetchedAt = record.fetchedAt;
+      const daysSinceFetch = fetchedAt
+        ? (Date.now() - fetchedAt.getTime()) / (1000 * 60 * 60 * 24)
+        : Infinity;
+
+      // Check if cached data covers the requested years
+      const cachedYears = record.years as number[];
+      const hasAllYears = years.every((y) => cachedYears.includes(y));
+
+      if (daysSinceFetch < CACHE_DURATION_DAYS && hasAllYears) {
+        console.log(
+          `✅ Using cached crime data (${Math.floor(daysSinceFetch)} days old)`,
+        );
+        return NextResponse.json(record.responseData);
+      }
+    }
+
+    // NOT CACHED OR STALE - Fetch from FBI API
+    console.log(`❌ No fresh crime data. Fetching from FBI API...`);
+
     const startYear = Math.min(...years);
     const endYear = Math.max(...years);
     const fromDate = `01-${startYear}`;
     const toDate = `12-${endYear}`;
 
-    console.log(
-      `API Route: Processing request for ${stateAbbr}, type slug: ${crimeTypeSlug}, category: ${category ?? "unknown"}, range: ${fromDate} to ${toDate}`,
-    );
+    let responseData;
 
     // Handle offense-specific yearly trends
     if (crimeTypeSlug.startsWith("OFFENSE_")) {
       const offenseCode = crimeTypeSlug.replace("OFFENSE_", "");
       const offenseName = OFFENSE_CODES[offenseCode] ?? "Unknown Offense";
-
-      console.log(
-        `Fetching yearly trend for offense: ${offenseCode} (${offenseName})`,
-      );
 
       const offenseYearlyData = await fetchOffenseYearlyTrend(
         stateAbbr,
@@ -296,22 +325,20 @@ export async function POST(req: NextRequest) {
         offenseCode,
       );
 
-      return NextResponse.json({
+      responseData = {
         dataType: "offense_yearly_trend",
         offenseYearlyData,
         offenseName,
-      });
+      };
     }
-
-    // Handle total arrest demographics
-    if (crimeTypeSlug === "ARREST_DEMOGRAPHICS_OVERALL") {
+    // Handle arrest demographics
+    else if (crimeTypeSlug === "ARREST_DEMOGRAPHICS_OVERALL") {
       const arrestData = await fetchArrestDemographicsData(
         stateAbbr,
         fromDate,
         toDate,
       );
 
-      // Handle different possible response structures
       let finalArrestData: ArrestDemographicsData;
       if ("data" in arrestData && arrestData.data) {
         finalArrestData = arrestData.data;
@@ -321,37 +348,63 @@ export async function POST(req: NextRequest) {
         finalArrestData = arrestData as ArrestDemographicsData;
       }
 
-      return NextResponse.json({
+      responseData = {
         dataType: "arrest_demographics_total",
         arrestDemographics: finalArrestData,
-      });
+      };
     }
+    // Handle summarized offense data
+    else {
+      if (!targetKey) {
+        return NextResponse.json(
+          { error: "Missing targetKey for summarized offense request." },
+          { status: 400 },
+        );
+      }
 
-    // Handle summarized offense data (existing logic)
-    if (!targetKey) {
-      return NextResponse.json(
-        { error: "Missing targetKey for summarized offense request." },
-        { status: 400 },
+      const rawSummarizedData = await fetchSingleSummarizedOffenseData(
+        stateAbbr,
+        fromDate,
+        toDate,
+        crimeTypeSlug,
       );
+      const transformedAnnualData = transformMonthlyDataToAnnual(
+        rawSummarizedData,
+        targetKey,
+        years,
+        stateAbbr,
+      );
+
+      responseData = {
+        dataType: "summarized_offense_annual",
+        summaries: transformedAnnualData.summaries,
+        crimeTypeKey: transformedAnnualData.crimeTypeKey,
+      };
     }
 
-    const rawSummarizedData = await fetchSingleSummarizedOffenseData(
-      stateAbbr,
-      fromDate,
-      toDate,
+    // STORE IN DATABASE
+    // Delete old data for this combination
+    await db
+      .delete(crimeData)
+      .where(
+        and(
+          eq(crimeData.stateFips, stateFips),
+          eq(crimeData.crimeTypeSlug, crimeTypeSlug),
+        ),
+      );
+
+    // Insert new data
+    await db.insert(crimeData).values({
+      stateFips,
+      dataType: responseData.dataType,
       crimeTypeSlug,
-    );
-    const transformedAnnualData = transformMonthlyDataToAnnual(
-      rawSummarizedData,
-      targetKey,
-      years,
-      stateAbbr,
-    );
-    return NextResponse.json({
-      dataType: "summarized_offense_annual",
-      summaries: transformedAnnualData.summaries,
-      crimeTypeKey: transformedAnnualData.crimeTypeKey,
+      years: years,
+      responseData: responseData,
     });
+
+    console.log(`💾 Stored crime data in database`);
+
+    return NextResponse.json(responseData);
   } catch (error) {
     console.error("API Route General Error:", error);
     return NextResponse.json(
@@ -364,7 +417,6 @@ export async function POST(req: NextRequest) {
     );
   }
 }
-
 // transformMonthlyDataToAnnual function remains as previously defined
 // It processes responses from fetchSingleSummarizedOffenseData
 function transformMonthlyDataToAnnual(

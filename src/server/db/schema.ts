@@ -9,6 +9,7 @@ import {
   varchar,
   serial,
   jsonb,
+  numeric,
 } from "drizzle-orm/pg-core";
 import { type AdapterAccount } from "next-auth/adapters";
 
@@ -164,5 +165,109 @@ export const verificationTokens = pgTable(
   },
   (vt) => ({
     compoundKey: primaryKey({ columns: [vt.identifier, vt.token] }),
+  }),
+);
+
+export const hospitals = pgTable("hospital", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 255 }).notNull(),
+  address: text("address"),
+  city: varchar("city", { length: 100 }),
+  state: varchar("state", { length: 2 }),
+  stateFips: varchar("state_fips", { length: 2 }),
+  countyFips: varchar("county_fips", { length: 3 }),
+  county: varchar("county", { length: 100 }),
+  type: varchar("type", { length: 100 }),
+  owner: varchar("owner", { length: 255 }),
+  beds: integer("beds"),
+  trauma: varchar("trauma", { length: 50 }),
+  population: integer("population"),
+  naicsDesc: varchar("naics_desc", { length: 255 }),
+  latitude: numeric("latitude", { precision: 10, scale: 7 }),
+  longitude: numeric("longitude", { precision: 10, scale: 7 }),
+  geocodedAt: timestamp("geocoded_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const hospitalsRelations = relations(hospitals, ({ one }) => ({
+  county: one(counties, {
+    fields: [hospitals.stateFips, hospitals.countyFips],
+    references: [counties.stateId, counties.fipsCode],
+  }),
+}));
+
+export const censusHealthcareData = pgTable(
+  "census_healthcare_data",
+  {
+    id: serial("id").primaryKey(),
+    stateFips: varchar("state_fips", { length: 2 }).notNull(),
+    countyFips: varchar("county_fips", { length: 3 }).notNull(),
+    industryCode: varchar("industry_code", { length: 10 }),
+    industryName: varchar("industry_name", { length: 255 }),
+    establishments: integer("establishments"),
+    employees: integer("employees"),
+    annualPayroll: integer("annual_payroll"),
+    fetchedAt: timestamp("fetched_at").defaultNow(),
+  },
+  (table) => ({
+    stateCountyIdx: index("census_healthcare_state_county_idx").on(
+      table.stateFips,
+      table.countyFips,
+    ),
+  }),
+);
+
+export const blsHealthcareData = pgTable(
+  "bls_healthcare_data",
+  {
+    id: serial("id").primaryKey(),
+    stateFips: varchar("state_fips", { length: 2 }).notNull(),
+    countyFips: varchar("county_fips", { length: 3 }).notNull(),
+    seriesId: varchar("series_id", { length: 100 }).notNull(),
+    dataPoints: jsonb("data_points").notNull(),
+    fetchedAt: timestamp("fetched_at").defaultNow(),
+  },
+  (table) => ({
+    stateCountyIdx: index("bls_healthcare_state_county_idx").on(
+      table.stateFips,
+      table.countyFips,
+    ),
+  }),
+);
+export const crimeData = pgTable(
+  "crime_data",
+  {
+    id: serial("id").primaryKey(),
+    stateFips: varchar("state_fips", { length: 2 }).notNull(),
+    dataType: varchar("data_type", { length: 50 }).notNull(), // 'summarized', 'arrest_demographics', 'offense_yearly'
+    crimeTypeSlug: varchar("crime_type_slug", { length: 100 }).notNull(),
+    years: jsonb("years").notNull(), // array of years
+    responseData: jsonb("response_data").notNull(), // the full API response
+    fetchedAt: timestamp("fetched_at").defaultNow(),
+  },
+  (table) => ({
+    stateCrimeTypeIdx: index("crime_data_state_type_idx").on(
+      table.stateFips,
+      table.crimeTypeSlug,
+    ),
+  }),
+);
+
+export const acsPopulationData = pgTable(
+  "acs_population_data",
+  {
+    id: serial("id").primaryKey(),
+    stateFips: varchar("state_fips", { length: 2 }).notNull(),
+    countyFips: varchar("county_fips", { length: 3 }),
+    year: integer("year").notNull(),
+    data: jsonb("data").notNull(), // Store the entire ProcessedAcsData object
+    fetchedAt: timestamp("fetched_at").defaultNow(),
+  },
+  (table) => ({
+    stateCountyYearIdx: index("acs_population_state_county_year_idx").on(
+      table.stateFips,
+      table.countyFips,
+      table.year,
+    ),
   }),
 );

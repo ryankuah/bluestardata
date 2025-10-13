@@ -45,7 +45,7 @@ export default function CountyMap({
       }}
       mapStyle="mapbox://styles/mapbox/light-v9"
       mapboxAccessToken={token}
-      style={{ height: "70vh", width: "70vw" }}
+      style={{ height: "70vh", width: "70vh" }}
       onLoad={handleMapLoad}
       minZoom={minZoomLevel}
     >

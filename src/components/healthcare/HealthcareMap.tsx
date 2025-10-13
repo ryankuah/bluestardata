@@ -37,82 +37,49 @@ interface Hospital {
   longitude: number | null;
 }
 
-interface HealthcareData {
-  providers: Provider[];
-  hospitals: Hospital[];
-}
-
 export default function HealthcareMap({
   feature,
   token,
-  state,
-  county,
+  providers,
+  hospitals: initialHospitals,
+  stateFips,
+  countyFips,
 }: {
   feature: Feature;
   token: string;
-  state: string;
-  county: string;
+  providers: Provider[];
+  hospitals: Hospital[];
+  stateFips: string;
+  countyFips: string;
 }) {
+  const [hospitals, setHospitals] = useState<Hospital[]>(initialHospitals);
+  const [isLoadingGeocode, setIsLoadingGeocode] = useState(false);
   const [minLng, minLat, maxLng, maxLat] = bbox(feature);
   const [popup, setPopup] = useState<
     ((Provider | Hospital) & { type: "provider" | "hospital" }) | null
   >(null);
   const [minZoomLevel, setMinZoomLevel] = useState(0);
-  const [healthcareData, setHealthcareData] = useState<HealthcareData>({
-    providers: [],
-    hospitals: [],
-  });
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  // Fetch geocoded hospitals in the background
+  useEffect(() => {
+    setIsLoadingGeocode(true);
+    fetch(`/api/healthcare/geocode?state=${stateFips}&county=${countyFips}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setHospitals(data.hospitals);
+        setIsLoadingGeocode(false);
+      })
+      .catch((err) => {
+        console.error("Failed to load geocoded hospitals:", err);
+        setIsLoadingGeocode(false);
+      });
+  }, [stateFips, countyFips]);
 
   const handleMapLoad = useCallback((evt: MapboxEvent) => {
     const map = evt?.target;
     const currentZoom = typeof map?.getZoom === "function" ? map.getZoom() : 0;
     setMinZoomLevel(currentZoom);
   }, []);
-
-  useEffect(() => {
-    const fetchHealthcareData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(
-          `/api/healthcare?state=${state}&county=${county}`,
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = (await response.json()) as unknown;
-        const providers =
-          data &&
-          typeof data === "object" &&
-          Array.isArray((data as { providers?: unknown }).providers)
-            ? (data as { providers: Provider[] }).providers
-            : [];
-        const hospitals =
-          data &&
-          typeof data === "object" &&
-          Array.isArray((data as { hospitals?: unknown }).hospitals)
-            ? (data as { hospitals: Hospital[] }).hospitals
-            : [];
-        setHealthcareData({ providers, hospitals });
-      } catch (err) {
-        console.error("Error fetching healthcare data:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "Failed to load healthcare data.",
-        );
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchHealthcareData();
-  }, [state, county]);
 
   const getProviderIcon = (primaryTaxonomy: string) => {
     if (primaryTaxonomy.toLowerCase().includes("hospital")) {
@@ -126,31 +93,30 @@ export default function HealthcareMap({
 
   const getProviderColor = (primaryTaxonomy: string) => {
     if (primaryTaxonomy.toLowerCase().includes("hospital")) {
-      return "#dc2626"; // red-600
+      return "#dc2626";
     } else if (primaryTaxonomy.toLowerCase().includes("clinic")) {
-      return "#059669"; // emerald-600
+      return "#059669";
     } else if (primaryTaxonomy.toLowerCase().includes("specialist")) {
-      return "#7c3aed"; // violet-600
+      return "#7c3aed";
     } else if (primaryTaxonomy.toLowerCase().includes("dentist")) {
-      return "#ea580c"; // orange-600
+      return "#ea580c";
     } else {
-      return "#2563eb"; // blue-600
+      return "#2563eb";
     }
   };
 
   const getHospitalColor = (trauma: string, _beds: number) => {
-    // Color by trauma level, size by beds
     switch (trauma) {
       case "LEVEL I":
-        return "#dc2626"; // red-600 - highest trauma level
+        return "#dc2626";
       case "LEVEL II":
-        return "#ea580c"; // orange-600
+        return "#ea580c";
       case "LEVEL III":
-        return "#d97706"; // amber-600
+        return "#d97706";
       case "LEVEL IV":
-        return "#65a30d"; // lime-600
+        return "#65a30d";
       default:
-        return "#6b7280"; // gray-500
+        return "#6b7280";
     }
   };
 
@@ -162,30 +128,16 @@ export default function HealthcareMap({
     return 12;
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-96 w-full items-center justify-center rounded-lg bg-gray-100">
-        <div className="text-center">
-          <div className="mb-2 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p className="text-gray-600">Loading healthcare facilities...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-96 w-full items-center justify-center rounded-lg bg-red-50">
-        <p className="text-red-600">⚠️ {error}</p>
-      </div>
-    );
-  }
-
   return (
     <div className="w-full">
       <div className="mb-4 rounded-lg bg-white p-4 shadow-md">
         <h2 className="mb-2 text-xl font-semibold text-gray-700">
           Healthcare Facilities Map
+          {isLoadingGeocode && (
+            <span className="ml-2 text-sm text-gray-500">
+              (Loading locations...)
+            </span>
+          )}
         </h2>
         <div className="flex flex-wrap gap-4 text-sm">
           <div className="flex items-center gap-2">
@@ -193,7 +145,7 @@ export default function HealthcareMap({
             <span>
               Hospitals (
               {
-                healthcareData.hospitals.filter(
+                hospitals.filter(
                   (h) => Boolean(h.latitude) && Boolean(h.longitude),
                 ).length
               }
@@ -205,7 +157,7 @@ export default function HealthcareMap({
             <span>
               Clinics (
               {
-                healthcareData.providers.filter(
+                providers.filter(
                   (p) =>
                     p.primaryTaxonomy.toLowerCase().includes("clinic") &&
                     Boolean(p.latitude) &&
@@ -220,7 +172,7 @@ export default function HealthcareMap({
             <span>
               Other Providers (
               {
-                healthcareData.providers.filter(
+                providers.filter(
                   (p) =>
                     !p.primaryTaxonomy.toLowerCase().includes("clinic") &&
                     Boolean(p.latitude) &&
@@ -253,7 +205,7 @@ export default function HealthcareMap({
           minZoom={minZoomLevel}
         >
           {/* Render Hospital Markers */}
-          {healthcareData.hospitals.map((hospital, index) => {
+          {hospitals.map((hospital, index) => {
             if (hospital.latitude == null || hospital.longitude == null)
               return null;
 
@@ -278,7 +230,7 @@ export default function HealthcareMap({
           })}
 
           {/* Render Provider Markers */}
-          {healthcareData.providers.map((provider, index) => {
+          {providers.map((provider, index) => {
             if (provider.latitude == null || provider.longitude == null)
               return null;
 

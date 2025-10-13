@@ -1,9 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import {
-  BarChart,
-  Bar,
   XAxis,
   YAxis,
   Tooltip,
@@ -38,32 +36,12 @@ interface HealthcareEmploymentData {
   }>;
 }
 
-async function fetchHealthcareEmploymentData(
-  stateFips: string,
-  countyFips: string,
-): Promise<HealthcareEmploymentData> {
-  // Fetch Census CBP data for healthcare industries
-  const censusResponse = await fetch(
-    `/api/healthcare/Census?state=${stateFips}&county=${countyFips}`,
-  );
-
-  // Fetch BLS QCEW data for healthcare trends
-  const blsResponse = await fetch(
-    `/api/healthcare/BLS?state=${stateFips}&county=${countyFips}`,
-  );
-
-  const censusData = (await censusResponse.json()) as unknown;
-  const blsData = (await blsResponse.json()) as unknown;
-
-  return processHealthcareData(censusData, blsData);
-}
-
 type CensusRow = {
   industryCode: string;
   industryName?: string;
   establishments?: number;
   employees?: number;
-  annualPayroll?: number; // thousands
+  annualPayroll?: number;
 };
 
 function processHealthcareData(
@@ -73,12 +51,11 @@ function processHealthcareData(
   const data: CensusRow[] = Array.isArray(censusData)
     ? (censusData as CensusRow[])
     : [];
-  // Extract hospital-specific data (NAICS 622)
+
   const hospitalData =
     data.find((item) => item.industryCode === "622") ??
     ({ employees: 0, establishments: 0, annualPayroll: 0 } as CensusRow);
 
-  // Calculate healthcare totals
   const healthcareSectors = [
     { naics: "6211", name: "Physician Offices", color: "#8884d8" },
     { naics: "6212", name: "Dental Offices", color: "#82ca9d" },
@@ -106,7 +83,6 @@ function processHealthcareData(
     })
     .filter((sector) => sector.employees > 0);
 
-  // Calculate totals
   const totalHealthcareEmployees = processedSectors.reduce(
     (sum, sector) => sum + sector.employees,
     0,
@@ -116,7 +92,6 @@ function processHealthcareData(
     0,
   );
 
-  // Mock employment trends (you would get this from BLS time series data)
   const employmentTrends = Array.from({ length: 5 }, (_, i) => ({
     year: (2019 + i).toString(),
     hospitalEmployees: (hospitalData.employees ?? 0) * (0.95 + i * 0.02),
@@ -144,55 +119,26 @@ function processHealthcareData(
   };
 }
 
+// ✅ CORRECTED COMPONENT SIGNATURE
 export default function HealthcareEmploymentAnalysis({
-  stateFips,
-  countyFips,
+  censusData,
+  blsData,
   countyName,
   stateName,
 }: {
-  stateFips: string;
-  countyFips: string;
+  censusData: unknown;
+  blsData: unknown;
   countyName: string;
   stateName: string;
 }) {
-  const [data, setData] = useState<HealthcareEmploymentData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    void fetchHealthcareEmploymentData(stateFips, countyFips)
-      .then(setData)
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : "Failed to load data"),
-      )
-      .finally(() => setLoading(false));
-  }, [stateFips, countyFips]);
-
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-4 border-blue-500 border-t-transparent"></div>
-          <p>Loading healthcare employment data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="rounded-lg bg-red-50 p-4">
-        <p className="text-red-600">Error loading data: {error}</p>
-      </div>
-    );
-  }
-
-  if (!data) return null;
+  // ✅ Process data from props
+  const data = processHealthcareData(censusData, blsData);
 
   const healthcarePercentage = (
     (data.totalHealthcareEmployees / data.totalEmployees) *
     100
   ).toFixed(1);
+
   const hospitalPercentage = (
     (data.hospitalEmployees / data.totalHealthcareEmployees) *
     100
@@ -256,7 +202,7 @@ export default function HealthcareEmploymentAnalysis({
       </div>
 
       {/* Charts Grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6">
         {/* Healthcare Sector Breakdown */}
         <div className="rounded-lg bg-white p-6 shadow">
           <h3 className="mb-4 text-lg font-semibold">
@@ -268,7 +214,7 @@ export default function HealthcareEmploymentAnalysis({
                 data={data.healthcareSectors}
                 cx="50%"
                 cy="50%"
-                outerRadius={100}
+                outerRadius="80%"
                 dataKey="employees"
                 nameKey="sector"
                 label={({ sector, percent }) =>
@@ -294,33 +240,38 @@ export default function HealthcareEmploymentAnalysis({
           <h3 className="mb-4 text-lg font-semibold">
             Healthcare Employment Trends
           </h3>
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={data.employmentTrends}>
-              <XAxis dataKey="year" />
-              <YAxis />
-              <Tooltip
-                formatter={(value: number) => [
-                  value.toLocaleString(),
-                  "Employees",
-                ]}
-              />
-              <Legend />
-              <Line
-                type="monotone"
-                dataKey="hospitalEmployees"
-                stroke="#8884d8"
-                strokeWidth={3}
-                name="Hospital Employees"
-              />
-              <Line
-                type="monotone"
-                dataKey="totalHealthcare"
-                stroke="#82ca9d"
-                strokeWidth={3}
-                name="Total Healthcare"
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <div className="flex justify-center">
+            <ResponsiveContainer width="90%" height={300}>
+              <LineChart
+                data={data.employmentTrends}
+                margin={{ top: 10, right: 20, left: 20, bottom: 5 }}
+              >
+                <XAxis dataKey="year" />
+                <YAxis />
+                <Tooltip
+                  formatter={(value: number) => [
+                    value.toLocaleString(),
+                    "Employees",
+                  ]}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="hospitalEmployees"
+                  stroke="#8884d8"
+                  strokeWidth={3}
+                  name="Hospital Employees"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="totalHealthcare"
+                  stroke="#82ca9d"
+                  strokeWidth={3}
+                  name="Total Healthcare"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Employment Concentration */}

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 
 interface Provider {
   number: string;
@@ -27,23 +27,17 @@ interface Hospital {
 }
 
 export default function MajorHealthcareProviders({
-  state,
-  county,
+  providers,
+  hospitals,
 }: {
-  state: string;
-  county: string;
+  providers: Provider[];
+  hospitals: Hospital[];
 }) {
-  const [providers, setProviders] = useState<Provider[]>([]);
-  const [hospitals, setHospitals] = useState<Hospital[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [sortBy, setSortBy] = useState<"name" | "primaryTaxonomy">("name");
   const [sortAsc, setSortAsc] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("All");
-
-  // Hospital table state
   const [hospitalPage, setHospitalPage] = useState(1);
   const [hospitalSortBy, setHospitalSortBy] = useState<
     "name" | "type" | "beds" | "trauma"
@@ -83,47 +77,6 @@ export default function MajorHealthcareProviders({
     "Clinic/Center, Urgent Care",
     "Clinic/Center, Birthing",
   ];
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Fetch both providers and hospitals from the same API
-        const response = await fetch(
-          `/api/healthcare?state=${state}&county=${county}`,
-        );
-
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status} ${response.statusText}`);
-        }
-
-        const data = (await response.json()) as unknown;
-        const providers =
-          data &&
-          typeof data === "object" &&
-          Array.isArray((data as { providers?: unknown }).providers)
-            ? (data as { providers: Provider[] }).providers
-            : [];
-        const hospitals =
-          data &&
-          typeof data === "object" &&
-          Array.isArray((data as { hospitals?: unknown }).hospitals)
-            ? (data as { hospitals: Hospital[] }).hospitals
-            : [];
-        setProviders(providers);
-        setHospitals(hospitals);
-      } catch (err) {
-        console.error("Error fetching data:", err);
-        setError(err instanceof Error ? err.message : "Failed to load data.");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    void fetchData();
-  }, [state, county]);
 
   const typeOptions = useMemo(() => {
     const types = Array.from(
@@ -259,12 +212,7 @@ export default function MajorHealthcareProviders({
           </select>
         </div>
 
-        {loading && <p className="text-gray-500">Loading hospitals...</p>}
-        {!loading && filteredHospitals.length === 0 && (
-          <p className="text-gray-500">No hospitals found.</p>
-        )}
-
-        {!loading && filteredHospitals.length > 0 && (
+        {filteredHospitals.length > 0 && (
           <>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-gray-700">
@@ -378,6 +326,7 @@ export default function MajorHealthcareProviders({
           </>
         )}
       </div>
+
       {/* Healthcare Providers Table */}
       <div className="w-full rounded-lg bg-white p-4 shadow-md">
         <h2 className="mb-4 text-xl font-semibold text-gray-700">
@@ -409,13 +358,7 @@ export default function MajorHealthcareProviders({
           </select>
         </div>
 
-        {loading && <p className="text-gray-500">Loading providers...</p>}
-        {error && <p className="text-red-600">⚠️ {error}</p>}
-        {!loading && !error && filteredProviders.length === 0 && (
-          <p className="text-gray-500">No providers found.</p>
-        )}
-
-        {!loading && !error && filteredProviders.length > 0 && (
+        {filteredProviders.length > 0 && (
           <>
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-gray-700">
