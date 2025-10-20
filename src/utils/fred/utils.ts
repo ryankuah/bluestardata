@@ -9,6 +9,9 @@ import {
   type Series,
   type FredObservations,
 } from "./types";
+import { db } from "@/server/db";
+import { fredSeries, fredObservations } from "@/server/db/schema";
+import { eq } from "drizzle-orm";
 import { getCountyGeoId, getStatebyName } from "../utils";
 
 export async function fetchCategories(id = 0) {
@@ -18,6 +21,27 @@ export async function fetchCategories(id = 0) {
     ).then((res) => res.json())) as unknown as FredCategory
   ).categories as unknown as Category[];
   return allCategories;
+}
+export async function getSeries(id: number): Promise<Series[]> {
+  // Check cache
+  const cached = await db.query.fredSeries.findFirst({
+    where: eq(fredSeries.fredId, id),
+  });
+
+  if (cached) {
+    return cached.seriesData as Series[];
+  }
+
+  // Cache miss - fetch from API
+  const freshData = await fetchSeries(id);
+
+  // Store in database
+  await db.insert(fredSeries).values({
+    fredId: id,
+    seriesData: freshData,
+  });
+
+  return freshData;
 }
 
 export async function fetchSeries(id = 0) {
@@ -39,6 +63,31 @@ export async function fetchObservations(fredObj: FredData[]) {
   return out;
 }
 
+export async function getObservation(
+  code: string,
+  name: string,
+): Promise<Observations> {
+  // Check cache
+  const cached = await db.query.fredObservations.findFirst({
+    where: eq(fredObservations.seriesCode, code),
+  });
+
+  if (cached) {
+    return cached.observationsData as Observations;
+  }
+
+  // Cache miss - fetch from API
+  const freshData = await fetchObservation(code, name);
+
+  // Store in database
+  await db.insert(fredObservations).values({
+    seriesCode: code,
+    seriesName: name,
+    observationsData: freshData,
+  });
+
+  return freshData;
+}
 export async function fetchObservation(code: string, name: string) {
   const fredObservation = (await fetch(
     `https://api.stlouisfed.org/fred/series/observations?series_id=${code}&file_type=json&api_key=${env.FRED_API_KEY}`,

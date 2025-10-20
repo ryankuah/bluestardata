@@ -1,4 +1,4 @@
-import { fetchSeries } from "@/utils/fred/utils";
+import { fetchSeries, getSeries } from "@/utils/fred/utils";
 import { FREDData } from "./fredData";
 import Image from "next/image";
 
@@ -38,8 +38,8 @@ export default async function FRED({
   }
 
   const [allStateSeries, allCountySeries] = await Promise.all([
-    stateFredId ? fetchSeries(stateFredId) : Promise.resolve([]),
-    countyFredId ? fetchSeries(countyFredId) : Promise.resolve([]),
+    stateFredId ? getSeries(stateFredId) : Promise.resolve([]),
+    countyFredId ? getSeries(countyFredId) : Promise.resolve([]),
   ]);
 
   console.log(`State series fetched: ${allStateSeries.length}`);

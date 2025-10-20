@@ -1,6 +1,38 @@
 import BLSQCEW from "./BLSQCEW";
+import { db } from "@/server/db";
+import { blsQcew } from "@/server/db/schema";
+import { and, eq } from "drizzle-orm";
 
 const BLS_API_URL = "https://api.bls.gov/publicAPI/v2/timeseries/data/";
+
+export async function getBLSData(
+  stateFips: string,
+  countyFips: string,
+): Promise<BLSDataSummary[]> {
+  // Check cache
+  const cached = await db.query.blsQcew.findFirst({
+    where: and(
+      eq(blsQcew.stateFips, stateFips),
+      eq(blsQcew.countyFips, countyFips),
+    ),
+  });
+
+  if (cached) {
+    return cached.summaryData as BLSDataSummary[];
+  }
+
+  // Cache miss - fetch from API
+  const freshData = await fetchBLSData(stateFips, countyFips);
+
+  // Store in database
+  await db.insert(blsQcew).values({
+    stateFips,
+    countyFips,
+    summaryData: freshData,
+  });
+
+  return freshData;
+}
 
 export type BLSDataSummary = {
   year: string;
@@ -168,7 +200,7 @@ export default async function BLSDataFetcher({
   countyFips: string;
 }) {
   try {
-    const summaryData = await fetchBLSData(stateFips, countyFips);
+    const summaryData = await getBLSData(stateFips, countyFips);
     return <BLSQCEW data={summaryData} state={_state} county={_county} />;
   } catch (error) {
     console.error("Error fetching BLS data:", error);

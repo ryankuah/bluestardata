@@ -1,6 +1,9 @@
 "use server";
 
 import { env } from "@/env";
+import { db } from "@/server/db";
+import { hudData } from "@/server/db/schema";
+import { and, eq } from "drizzle-orm";
 
 type HUDData = {
   fmr: {
@@ -41,7 +44,8 @@ type HUDApiResponse = {
   };
 } | null;
 
-export async function fetchHUDData(
+// Renamed from fetchHUDData to fetchHUDDataFromAPI
+async function fetchHUDDataFromAPI(
   stateFips: string,
   countyFips: string,
 ): Promise<HUDData> {
@@ -116,4 +120,34 @@ export async function fetchHUDData(
     il: ilData,
     mstp: mstpData,
   };
+}
+
+// NEW: Wrapper function with caching
+export async function fetchHUDData(
+  stateFips: string,
+  countyFips: string,
+): Promise<HUDData> {
+  // Check cache
+  const cached = await db.query.hudData.findFirst({
+    where: and(
+      eq(hudData.stateFips, stateFips),
+      eq(hudData.countyFips, countyFips),
+    ),
+  });
+
+  if (cached) {
+    return cached.hudData as HUDData;
+  }
+
+  // Cache miss - fetch from API
+  const freshData = await fetchHUDDataFromAPI(stateFips, countyFips);
+
+  // Store in database
+  await db.insert(hudData).values({
+    stateFips,
+    countyFips,
+    hudData: freshData,
+  });
+
+  return freshData;
 }

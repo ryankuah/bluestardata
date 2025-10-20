@@ -271,3 +271,96 @@ export const acsPopulationData = pgTable(
     ),
   }),
 );
+
+export const blsData = pgTable(
+  "bls_data",
+  {
+    id: serial("id").primaryKey(),
+    stateFips: varchar("state_fips", { length: 2 }).notNull(),
+    countyFips: varchar("county_fips", { length: 3 }).notNull(),
+    yearlyData: jsonb("yearly_data").notNull(),
+    industryMap: jsonb("industry_map").notNull(),
+    fetchedAt: timestamp("fetched_at").defaultNow(),
+  },
+  (table) => ({
+    stateCountyIdx: index("bls_data_state_county_idx").on(
+      table.stateFips,
+      table.countyFips,
+    ),
+  }),
+);
+
+// Relations
+export const blsDataRelations = relations(blsData, ({ one }) => ({
+  county: one(counties, {
+    fields: [blsData.stateFips, blsData.countyFips],
+    references: [counties.stateId, counties.fipsCode],
+  }),
+}));
+
+// BLS QCEW
+export const blsQcew = pgTable(
+  "bls_qcew",
+  {
+    id: serial("id").primaryKey(),
+    stateFips: varchar("state_fips", { length: 2 }).notNull(),
+    countyFips: varchar("county_fips", { length: 3 }).notNull(),
+    summaryData: jsonb("summary_data").notNull(),
+    fetchedAt: timestamp("fetched_at").defaultNow(),
+  },
+  (table) => ({
+    stateCountyIdx: index("bls_qcew_state_county_idx").on(
+      table.stateFips,
+      table.countyFips,
+    ),
+  }),
+);
+
+export const censusCbpData = pgTable(
+  "census_cbp_data",
+  {
+    id: serial("id").primaryKey(),
+    stateFips: varchar("state_fips", { length: 2 }).notNull(),
+    countyFips: varchar("county_fips", { length: 3 }).notNull(),
+    censusData: jsonb("census_data").notNull(),
+    fetchedAt: timestamp("fetched_at").defaultNow(),
+  },
+  (table) => ({
+    stateCountyIdx: index("census_cbp_state_county_idx").on(
+      table.stateFips,
+      table.countyFips,
+    ),
+  }),
+);
+
+export const fredSeries = pgTable("fred_series", {
+  id: serial("id").primaryKey(),
+  fredId: integer("fred_id").notNull().unique(),
+  seriesData: jsonb("series_data").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+});
+
+export const fredObservations = pgTable("fred_observations", {
+  id: serial("id").primaryKey(),
+  seriesCode: varchar("series_code", { length: 100 }).notNull().unique(),
+  seriesName: varchar("series_name", { length: 255 }).notNull(),
+  observationsData: jsonb("observations_data").notNull(),
+  fetchedAt: timestamp("fetched_at").defaultNow(),
+});
+
+export const hudData = pgTable(
+  "hud_data",
+  {
+    id: serial("id").primaryKey(),
+    stateFips: varchar("state_fips", { length: 2 }).notNull(),
+    countyFips: varchar("county_fips", { length: 3 }).notNull(),
+    hudData: jsonb("hud_data").notNull(),
+    fetchedAt: timestamp("fetched_at").defaultNow(),
+  },
+  (table) => ({
+    stateCountyIdx: index("hud_data_state_county_idx").on(
+      table.stateFips,
+      table.countyFips,
+    ),
+  }),
+);

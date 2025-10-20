@@ -1,6 +1,8 @@
 import { env } from "@/env";
 import Table from "@/components/dataUI/Table";
-
+import { db } from "@/server/db";
+import { censusCbpData } from "@/server/db/schema";
+import { and, eq } from "drizzle-orm";
 const CENSUS_API_URL = "https://api.census.gov/data/2022/cbp";
 
 type CensusRow = {
@@ -12,6 +14,35 @@ type CensusRow = {
 };
 
 type CensusApiResponse = string[][];
+
+export async function getCensusData(
+  stateFips: string,
+  countyFips: string,
+): Promise<CensusRow[]> {
+  // Check cache
+  const cached = await db.query.censusCbpData.findFirst({
+    where: and(
+      eq(censusCbpData.stateFips, stateFips),
+      eq(censusCbpData.countyFips, countyFips),
+    ),
+  });
+
+  if (cached) {
+    return cached.censusData as CensusRow[];
+  }
+
+  // Cache miss - fetch from API
+  const freshData = await fetchCensusData(stateFips, countyFips);
+
+  // Store in database
+  await db.insert(censusCbpData).values({
+    stateFips,
+    countyFips,
+    censusData: freshData,
+  });
+
+  return freshData;
+}
 
 export async function fetchCensusData(
   stateFips: string,
@@ -82,7 +113,7 @@ export default async function CensusDataFetcher({
     },
   ];
   try {
-    const data = await fetchCensusData(stateFips, countyFips);
+    const data = await getCensusData(stateFips, countyFips);
     return (
       <Table
         name="2022 CBP"

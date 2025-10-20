@@ -159,7 +159,7 @@ export default async function Page({
     .then((r) => {
       console.log("Healthcare API status:", r.status);
       if (!r.ok) throw new Error(`Failed: ${r.status}`);
-      return r.json();
+      return r.json() as Promise<{ providers: []; hospitals: [] }>; // Add type here
     })
     .catch((err) => {
       console.error("Healthcare fetch error:", err);
@@ -173,7 +173,7 @@ export default async function Page({
     .then((r) => {
       console.log("Census Healthcare API status:", r.status);
       if (!r.ok) throw new Error(`Failed: ${r.status}`);
-      return r.json();
+      return r.json() as Promise<[]>; // Add type here
     })
     .catch((err) => {
       console.error("Census Healthcare fetch error:", err);
@@ -187,13 +187,12 @@ export default async function Page({
     .then((r) => {
       console.log("BLS Healthcare API status:", r.status);
       if (!r.ok) throw new Error(`Failed: ${r.status}`);
-      return r.json();
+      return r.json() as Promise<{ series: [] }>; // Add type here
     })
     .catch((err) => {
       console.error("BLS Healthcare fetch error:", err);
       return { series: [] };
     });
-
   return (
     <div className="flex w-screen flex-col items-center space-y-8 bg-gray-50 p-6">
       <header className="text-center">
