@@ -9,10 +9,10 @@ import {
   type Series,
   type FredObservations,
 } from "./types";
+import { getCountyGeoId, getStatebyName } from "../utils";
 import { db } from "@/server/db";
 import { fredSeries, fredObservations } from "@/server/db/schema";
 import { eq } from "drizzle-orm";
-import { getCountyGeoId, getStatebyName } from "../utils";
 
 export async function fetchCategories(id = 0) {
   const allCategories = (
@@ -22,6 +22,27 @@ export async function fetchCategories(id = 0) {
   ).categories as unknown as Category[];
   return allCategories;
 }
+
+async function fetchSeriesFromAPI(id = 0) {
+  const response = await fetch(
+    `https://api.stlouisfed.org/fred/category/series?category_id=${id}&api_key=${env.FRED_API_KEY}&file_type=json`,
+  );
+
+  if (!response.ok) {
+    console.error(`FRED API error: ${response.status}`);
+    return [];
+  }
+
+  const contentType = response.headers.get("content-type");
+  if (!contentType?.includes("application/json")) {
+    console.error("FRED API returned non-JSON response");
+    return [];
+  }
+
+  const data = (await response.json()) as FredSeries;
+  return data.seriess;
+}
+
 export async function getSeries(id: number): Promise<Series[]> {
   // Check cache
   const cached = await db.query.fredSeries.findFirst({
@@ -33,7 +54,7 @@ export async function getSeries(id: number): Promise<Series[]> {
   }
 
   // Cache miss - fetch from API
-  const freshData = await fetchSeries(id);
+  const freshData = await fetchSeriesFromAPI(id);
 
   // Store in database
   await db.insert(fredSeries).values({
@@ -45,12 +66,7 @@ export async function getSeries(id: number): Promise<Series[]> {
 }
 
 export async function fetchSeries(id = 0) {
-  const allSeries = (
-    (await fetch(
-      `https://api.stlouisfed.org/fred/category/series?category_id=${id}&api_key=${env.FRED_API_KEY}&file_type=json`,
-    ).then((res) => res.json())) as unknown as FredSeries
-  ).seriess as unknown as Series[];
-  return allSeries;
+  return fetchSeriesFromAPI(id);
 }
 
 export async function fetchObservations(fredObj: FredData[]) {
@@ -61,6 +77,46 @@ export async function fetchObservations(fredObj: FredData[]) {
     out.push(observations);
   }
   return out;
+}
+
+async function fetchObservationFromAPI(code: string, name: string) {
+  const response = await fetch(
+    `https://api.stlouisfed.org/fred/series/observations?series_id=${code}&file_type=json&api_key=${env.FRED_API_KEY}`,
+  );
+
+  if (!response.ok) {
+    console.error(`FRED Observation API error: ${response.status}`);
+    return {
+      code: code,
+      units: "",
+      name: name ?? code,
+      observations: [],
+    };
+  }
+
+  const contentType = response.headers.get("content-type");
+  if (!contentType?.includes("application/json")) {
+    console.error("FRED Observation API returned non-JSON response");
+    return {
+      code: code,
+      units: "",
+      name: name ?? code,
+      observations: [],
+    };
+  }
+
+  const fredObservation = (await response.json()) as FredObservations;
+
+  const observations: Observations = {
+    code: code,
+    units: fredObservation.units,
+    name: name ?? code,
+    observations: fredObservation.observations.map((observation) => ({
+      date: observation.date,
+      value: observation.value,
+    })),
+  };
+  return observations;
 }
 
 export async function getObservation(
@@ -77,7 +133,7 @@ export async function getObservation(
   }
 
   // Cache miss - fetch from API
-  const freshData = await fetchObservation(code, name);
+  const freshData = await fetchObservationFromAPI(code, name);
 
   // Store in database
   await db.insert(fredObservations).values({
@@ -88,21 +144,9 @@ export async function getObservation(
 
   return freshData;
 }
-export async function fetchObservation(code: string, name: string) {
-  const fredObservation = (await fetch(
-    `https://api.stlouisfed.org/fred/series/observations?series_id=${code}&file_type=json&api_key=${env.FRED_API_KEY}`,
-  ).then((res) => res.json())) as unknown as FredObservations;
 
-  const observations: Observations = {
-    code: code,
-    units: fredObservation.units,
-    name: name ?? code,
-    observations: fredObservation.observations.map((observation) => ({
-      date: observation.date,
-      value: observation.value,
-    })),
-  };
-  return observations;
+export async function fetchObservation(code: string, name: string) {
+  return fetchObservationFromAPI(code, name);
 }
 
 export async function addFredIds() {

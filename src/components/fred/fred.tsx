@@ -13,14 +13,8 @@ export default async function FRED({
   stateId: number | null;
   countyId: number | null;
 }) {
-  console.log(`FRED Component Debug - State: ${state}, County: ${county}`);
-  console.log(`State FRED ID: ${stateId}, County FRED ID: ${countyId}`);
-
   const stateFredId = stateId;
   const countyFredId = countyId;
-
-  console.log(`State FRED ID available: ${!!stateFredId}`);
-  console.log(`County FRED ID available: ${!!countyFredId}`);
 
   if (!stateFredId && !countyFredId) {
     return (
@@ -42,9 +36,6 @@ export default async function FRED({
     countyFredId ? getSeries(countyFredId) : Promise.resolve([]),
   ]);
 
-  console.log(`State series fetched: ${allStateSeries.length}`);
-  console.log(`County series fetched: ${allCountySeries.length}`);
-
   const stateCodes: [string, string][] = allStateSeries.map((series) => [
     series.id,
     series.title,
@@ -53,9 +44,6 @@ export default async function FRED({
     series.id,
     series.title,
   ]);
-
-  console.log(`State codes prepared: ${stateCodes.length}`);
-  console.log(`County codes prepared: ${countyCodes.length}`);
 
   return (
     <div className="flex flex-col">

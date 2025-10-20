@@ -62,6 +62,5 @@ export default async function Unemployment({
       unemployments.label[index] = i.toString();
     }),
   );
-  console.log(unemployments);
   return <Chart unemployments={unemployments} />;
 }

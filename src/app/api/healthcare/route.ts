@@ -138,22 +138,11 @@ export async function GET(req: NextRequest) {
 
   const stateAbbr = stateFipsToAbbr[stateFips] ?? stateFips;
 
-  console.log(
-    "🔍 Received request for state:",
-    stateAbbr,
-    "county FIPS:",
-    countyFips,
-  );
-
   // Filter hospitals by state and county
   const filteredHospitals = hospitalData.filter(
     (hospital) =>
       hospital.statefips === stateFips &&
       hospital.countyfips.toString() === countyFips,
-  );
-
-  console.log(
-    `🏥 Found ${filteredHospitals.length} hospitals for this county.`,
   );
 
   const matchedZips = (
@@ -181,8 +170,6 @@ export async function GET(req: NextRequest) {
     }> = [];
 
     if (matchedZips.length > 0) {
-      console.log(`🔧 Found ${matchedZips.length} ZIP codes:`, matchedZips);
-
       const cmsRequests = matchedZips.map((zip) =>
         fetch(
           `https://npiregistry.cms.hhs.gov/api/?version=2.1&state=${stateAbbr}&postal_code=${zip}&enumeration_type=NPI-2&limit=50`,
@@ -240,8 +227,6 @@ export async function GET(req: NextRequest) {
           };
         });
     }
-
-    console.log(`✅ Found ${allProviders.length} unique providers.`);
     return NextResponse.json({
       providers: allProviders,
       providerCount: allProviders.length,

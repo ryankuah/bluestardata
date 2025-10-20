@@ -422,11 +422,6 @@ export async function POST(req: NextRequest): Promise<Response> {
       });
     }
 
-    // CHECK DATABASE FIRST
-    console.log(
-      `🔍 Checking cache for ACS data: ${stateFips}-${countyFips || "*"}, year ${year}`,
-    );
-
     const whereConditions = countyFips
       ? and(
           eq(acsPopulationData.stateFips, stateFips),
